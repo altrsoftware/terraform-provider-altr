@@ -1,0 +1,54 @@
+---
+page_title: "Provider: ALTR SaaS"
+description: |-
+  ALTR Provider for managing ALTR SaaS resources.
+---
+
+# ALTR Provider
+
+{{ .Description | trimspace }}
+
+## Example Usage
+
+{{ tffile "examples/provider/provider.tf" }}
+
+## Authentication and configuration
+
+The ALTR provider will accept the following configuration options:
+- Parameters in the provider block.
+- Environment variables.
+
+~> **Note:**
+If the environment variables are set, they will be overridden by the parameters in the provider block.
+
+## Environment Variables
+The ALTR provider will use the following environment variables for configuration:
+- `ALTR_API_KEY`: Your ALTR API key.
+- `ALTR_BASE_URL`: The base URL for the ALTR API.
+- `ALTR_ORG_ID`: The organization ID for your ALTR account.
+- `ALTR_SECRET`: The secret key for your ALTR account.
+
+### Example Environment Variables
+```shell
+export ALTR_API_KEY="my-api-key"
+export ALTR_BASE_URL="https://sc-control.live.altr.com"
+export ALTR_ORG_ID="my-org-id"
+export ALTR_SECRET="my-secret"
+```
+
+## Provider Configuration
+The ALTR provider can be configured using the following parameters in the provider block:
+- `api_key`: Your ALTR API key.
+- `base_url`: The base URL for the ALTR API.
+- `org_id`: The organization ID for your ALTR account.
+- `secret`: The secret key for your ALTR account.
+
+### Example Provider Configuration
+```terraform
+provider "altr" {
+  api_key  = "my-api-key"
+  base_url = "https://sc-control.live.altr.com"
+  org_id   = "my-org-id"
+  secret   = "my-secret"
+}
+```

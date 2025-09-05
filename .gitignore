@@ -1,0 +1,5 @@
+examples/*/*.auto.tfvars
+examples/*/*.tfstate*
+.vscode/
+.idea/
+.DS_Store
