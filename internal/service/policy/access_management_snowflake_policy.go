@@ -144,18 +144,12 @@ func (d *AccessManagementSnowflakePolicyResource) Schema(ctx context.Context, re
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
 				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"description": schema.StringAttribute{
 				Description: "Description of the Snowflake access management policy.",
 				Optional:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
-				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"connection_ids": schema.ListAttribute{
@@ -193,15 +187,11 @@ func (d *AccessManagementSnowflakePolicyResource) Schema(ctx context.Context, re
 					},
 				},
 			},
-
 			"rules": schema.ListNestedAttribute{
 				Description: "List of rules for the Snowflake access management policy.",
 				Required:    true,
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
-				},
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{

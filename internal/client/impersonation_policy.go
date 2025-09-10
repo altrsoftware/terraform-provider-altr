@@ -96,9 +96,8 @@ func (c *Client) GetImpersonationPolicy(policyID string) (*ImpersonationPolicy, 
 }
 
 // UpdateImpersonationPolicy updates an existing impersonation policy
-// NOT IMPLEMENTED
 func (c *Client) UpdateImpersonationPolicy(policyID string, input UpdateImpersonationPolicyInput) (*ImpersonationPolicy, error) {
-	resp, err := c.makeRequest(http.MethodPatch, "/unified-policy/management/policy/impersonation/"+url.PathEscape(policyID), input, "external")
+	resp, err := c.makeRequest(http.MethodPut, "/unified-policy/management/policy/impersonation/"+url.PathEscape(policyID), input, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to update impersonation policy: %w", err)
 	}

@@ -120,19 +120,8 @@ func (c *Client) GetAccessManagementOLTPPolicy(policyID string) (*AccessManageme
 }
 
 // UpdateAccessManagementOLTPPolicy updates an existing access management OLTP policy
-// Update is not currently supported
 func (c *Client) UpdateAccessManagementOLTPPolicy(policyID string, input UpdateAccessManagementOLTPPolicyInput) (*AccessManagementOLTPPolicy, error) {
-	resp, err := c.makeRequest(http.MethodPatch, "/unified-policy/management/access-management/oltp/"+url.PathEscape(policyID), input, "external")
-	if err != nil {
-		return nil, fmt.Errorf("failed to update access management OLTP policy: %w", err)
-	}
-
-	var policy AccessManagementOLTPPolicy
-	if err := handleAPIResponse(resp, &policy); err != nil {
-		return nil, fmt.Errorf("failed to update access management OLTP policy: %w", err)
-	}
-
-	return &policy, nil
+	return nil, fmt.Errorf("update of access management OLTP policy is not supported")
 }
 
 // DeleteAccessManagementOLTPPolicy deletes an access management OLTP policy
