@@ -322,17 +322,3 @@ func convertImpersonationRulesToTerraform(rules []client.ImpersonationRule) type
 		terraformRules,
 	)
 }
-
-// Helper function to convert a slice of strings to a Terraform list
-func convertStringListToTerraform(strings []string) types.List {
-	if len(strings) == 0 {
-		return types.ListNull(types.StringType)
-	}
-
-	var terraformStrings []attr.Value
-	for _, str := range strings {
-		terraformStrings = append(terraformStrings, types.StringValue(str))
-	}
-
-	return types.ListValueMust(types.StringType, terraformStrings)
-}

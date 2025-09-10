@@ -30,7 +30,7 @@ type AccessManagementOLTPPolicyDataSourceModel struct {
 	Description      types.String `tfsdk:"description"`
 	RepoName         types.String `tfsdk:"repo_name"`
 	CaseSensitivity  types.String `tfsdk:"case_sensitivity"`
-	DatabaseType     types.String `tfsdk:"database_type"`
+	DatabaseType     types.Int64  `tfsdk:"database_type"`
 	DatabaseTypeName types.String `tfsdk:"database_type_name"`
 	CreatedAt        types.String `tfsdk:"created_at"`
 	UpdatedAt        types.String `tfsdk:"updated_at"`
@@ -139,7 +139,7 @@ func (d *AccessManagementOLTPPolicyDataSource) Read(ctx context.Context, req dat
 	config.Description = types.StringValue(policy.Description)
 	config.RepoName = types.StringValue(policy.RepoName)
 	config.CaseSensitivity = types.StringValue(policy.CaseSensitivity)
-	config.DatabaseType = types.StringValue(policy.DatabaseType)
+	config.DatabaseType = types.Int64Value(policy.DatabaseType)
 	config.DatabaseTypeName = types.StringValue(policy.DatabaseTypeName)
 	config.CreatedAt = types.StringValue(policy.CreatedAt)
 	config.UpdatedAt = types.StringValue(policy.UpdatedAt)
