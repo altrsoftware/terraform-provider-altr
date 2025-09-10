@@ -1,19 +1,21 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package provider
 
 import (
 	"context"
 	"os"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service/policy"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service/repo"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service/sidecar"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"terraform-provider-altr/internal/client"
-	"terraform-provider-altr/internal/service/policy"
-	"terraform-provider-altr/internal/service/repo"
-	"terraform-provider-altr/internal/service/sidecar"
 )
 
 var _ provider.Provider = &SidecarProvider{}
@@ -64,6 +66,7 @@ func (p *SidecarProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var config SidecarProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -121,6 +124,7 @@ func (p *SidecarProvider) Configure(ctx context.Context, req provider.ConfigureR
 			"Unable to Create Sidecar API Client",
 			"An unexpected error occurred when creating the Sidecar API client: "+err.Error(),
 		)
+
 		return
 	}
 

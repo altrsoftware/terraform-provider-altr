@@ -1,10 +1,14 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package policy
 
 import (
 	"context"
 	"fmt"
-	customvalidation "terraform-provider-altr/internal/validation"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	customvalidation "github.com/altrsoftware/terraform-provider-altr/internal/validation"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -18,12 +22,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-
-	"terraform-provider-altr/internal/client"
 )
 
-var _ resource.Resource = &ImpersonationPolicyResource{}
-var _ resource.ResourceWithImportState = &ImpersonationPolicyResource{}
+var (
+	_ resource.Resource                = &ImpersonationPolicyResource{}
+	_ resource.ResourceWithImportState = &ImpersonationPolicyResource{}
+)
 
 func NewImpersonationPolicyResource() resource.Resource {
 	return &ImpersonationPolicyResource{}
@@ -188,6 +192,7 @@ func (r *ImpersonationPolicyResource) Configure(ctx context.Context, req resourc
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -198,6 +203,7 @@ func (r *ImpersonationPolicyResource) Create(ctx context.Context, req resource.C
 	var plan ImpersonationPolicyResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -220,6 +226,7 @@ func (r *ImpersonationPolicyResource) Create(ctx context.Context, req resource.C
 			"Error creating impersonation policy",
 			"Could not create impersonation policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -234,6 +241,7 @@ func (r *ImpersonationPolicyResource) Read(ctx context.Context, req resource.Rea
 	var state ImpersonationPolicyResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -245,12 +253,14 @@ func (r *ImpersonationPolicyResource) Read(ctx context.Context, req resource.Rea
 			"Error reading impersonation policy",
 			"Could not read impersonation policy ID "+state.ID.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	// If policy doesn't exist, remove it from state
 	if policy == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -262,11 +272,14 @@ func (r *ImpersonationPolicyResource) Read(ctx context.Context, req resource.Rea
 }
 
 func (r *ImpersonationPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan ImpersonationPolicyResourceModel
-	var state ImpersonationPolicyResourceModel
+	var (
+		plan  ImpersonationPolicyResourceModel
+		state ImpersonationPolicyResourceModel
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -288,6 +301,7 @@ func (r *ImpersonationPolicyResource) Update(ctx context.Context, req resource.U
 			"Error updating impersonation policy",
 			"Could not update impersonation policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -302,6 +316,7 @@ func (r *ImpersonationPolicyResource) Delete(ctx context.Context, req resource.D
 	var state ImpersonationPolicyResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -313,6 +328,7 @@ func (r *ImpersonationPolicyResource) Delete(ctx context.Context, req resource.D
 			"Error deleting impersonation policy",
 			"Could not delete impersonation policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 }
@@ -357,10 +373,12 @@ func convertRulesFromTerraform(rules types.List) []client.ImpersonationRule {
 		if !ok {
 			continue // Skip if actors are missing
 		}
+
 		actorsList, ok := actorsAttr.(types.List)
 		if !ok {
 			continue // Skip if actors are not a list
 		}
+
 		actors := convertActorsFromTerraform(actorsList)
 
 		// Extract targets
@@ -368,10 +386,12 @@ func convertRulesFromTerraform(rules types.List) []client.ImpersonationRule {
 		if !ok {
 			continue // Skip if targets are missing
 		}
+
 		targetsList, ok := targetsAttr.(types.List)
 		if !ok {
 			continue // Skip if targets are not a list
 		}
+
 		targets := convertActorsFromTerraform(targetsList)
 
 		// Append the rule to the client rules
@@ -428,6 +448,7 @@ func extractStringList(list types.List) []string {
 	}
 
 	var result []string
+
 	for _, element := range list.Elements() {
 		str, ok := element.(types.String)
 		if ok && !str.IsNull() && !str.IsUnknown() {
@@ -464,8 +485,10 @@ func convertRulesToTerraform(rules []client.ImpersonationRule) types.List {
 		})
 	}
 
-	var terraformRules []attr.Value
-	var diagnostics diag.Diagnostics
+	var (
+		terraformRules []attr.Value
+		diagnostics    diag.Diagnostics
+	)
 
 	for _, rule := range rules {
 		// Convert actors
@@ -484,6 +507,7 @@ func convertRulesToTerraform(rules []client.ImpersonationRule) types.List {
 				},
 			)
 			diagnostics.Append(actorDiags...)
+
 			terraformActors = append(terraformActors, actorValue)
 		}
 
@@ -503,6 +527,7 @@ func convertRulesToTerraform(rules []client.ImpersonationRule) types.List {
 				},
 			)
 			diagnostics.Append(targetDiags...)
+
 			terraformTargets = append(terraformTargets, targetValue)
 		}
 
@@ -552,6 +577,7 @@ func convertRulesToTerraform(rules []client.ImpersonationRule) types.List {
 			},
 		)
 		diagnostics.Append(ruleDiags...)
+
 		terraformRules = append(terraformRules, ruleValue)
 	}
 

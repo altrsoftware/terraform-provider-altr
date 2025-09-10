@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package sidecar_test
 
 import (
@@ -6,12 +9,11 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/acctest"
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-
-	"terraform-provider-altr/internal/acctest"
-	"terraform-provider-altr/internal/client"
 )
 
 var pubKeyExample1 = `-----BEGIN PUBLIC KEY-----
@@ -395,19 +397,6 @@ resource "altr_sidecar" "test" {
   unsupported_query_bypass   = %[6]t
 }
 `, name, hostname, description, publicKey1, publicKey2, queryBypass)
-}
-
-func testAccPreCheck(t *testing.T) {
-	// Check for required environment variables
-	if testGetEnv("ALTR_ORG_ID", "") == "" && testGetEnv("TF_ACC", "") == "1" {
-		t.Fatal("ALTR_ORG_ID must be set for acceptance tests")
-	}
-	if testGetEnv("ALTR_API_KEY", "") == "" && testGetEnv("TF_ACC", "") == "1" {
-		t.Fatal("ALTR_API_KEY must be set for acceptance tests")
-	}
-	if testGetEnv("ALTR_SECRET", "") == "" && testGetEnv("TF_ACC", "") == "1" {
-		t.Fatal("ALTR_SECRET must be set for acceptance tests")
-	}
 }
 
 // Helper function to get environment variables with defaults

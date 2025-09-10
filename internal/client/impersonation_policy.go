@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package client
 
 import (
@@ -72,7 +75,7 @@ func (c *Client) CreateImpersonationPolicy(input CreateImpersonationPolicyInput)
 
 // GetImpersonationPolicy retrieves an impersonation policy by ID
 func (c *Client) GetImpersonationPolicy(policyID string) (*ImpersonationPolicy, error) {
-	resp, err := c.makeRequest(http.MethodGet, fmt.Sprintf("/unified-policy/management/policy/%s", url.PathEscape(policyID)), nil, "external")
+	resp, err := c.makeRequest(http.MethodGet, "/unified-policy/management/policy/"+url.PathEscape(policyID), nil, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get impersonation policy: %w", err)
 	}
@@ -95,7 +98,7 @@ func (c *Client) GetImpersonationPolicy(policyID string) (*ImpersonationPolicy, 
 // UpdateImpersonationPolicy updates an existing impersonation policy
 // NOT IMPLEMENTED
 func (c *Client) UpdateImpersonationPolicy(policyID string, input UpdateImpersonationPolicyInput) (*ImpersonationPolicy, error) {
-	resp, err := c.makeRequest(http.MethodPatch, fmt.Sprintf("/unified-policy/management/policy/impersonation/%s", url.PathEscape(policyID)), input, "external")
+	resp, err := c.makeRequest(http.MethodPatch, "/unified-policy/management/policy/impersonation/"+url.PathEscape(policyID), input, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to update impersonation policy: %w", err)
 	}
@@ -110,7 +113,7 @@ func (c *Client) UpdateImpersonationPolicy(policyID string, input UpdateImperson
 
 // DeleteImpersonationPolicy deletes an impersonation policy
 func (c *Client) DeleteImpersonationPolicy(policyID string) error {
-	resp, err := c.makeRequest(http.MethodDelete, fmt.Sprintf("/unified-policy/management/policy/%s", url.PathEscape(policyID)), nil, "external")
+	resp, err := c.makeRequest(http.MethodDelete, "/unified-policy/management/policy/"+url.PathEscape(policyID), nil, "external")
 	if err != nil {
 		return fmt.Errorf("failed to delete impersonation policy: %w", err)
 	}

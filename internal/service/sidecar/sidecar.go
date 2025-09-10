@@ -1,13 +1,16 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package sidecar
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 
-	"terraform-provider-altr/internal/client"
-	"terraform-provider-altr/internal/service"
-
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -18,8 +21,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ resource.Resource = &SidecarResource{}
-var _ resource.ResourceWithImportState = &SidecarResource{}
+var (
+	_ resource.Resource                = &SidecarResource{}
+	_ resource.ResourceWithImportState = &SidecarResource{}
+)
 
 func NewSidecarResource() resource.Resource {
 	return &SidecarResource{}
@@ -130,7 +135,7 @@ func (r *SidecarResource) validatePublicKeys(model *SidecarResourceModel) error 
 	hasPublicKey2 := !model.PublicKey2.IsNull() && !model.PublicKey2.IsUnknown() && model.PublicKey2.ValueString() != ""
 
 	if !hasPublicKey1 && !hasPublicKey2 {
-		return fmt.Errorf("at least one of 'public_key_1' or 'public_key_2' must be specified")
+		return errors.New("at least one of 'public_key_1' or 'public_key_2' must be specified")
 	}
 
 	return nil
@@ -147,6 +152,7 @@ func (r *SidecarResource) Configure(ctx context.Context, req resource.ConfigureR
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -157,6 +163,7 @@ func (r *SidecarResource) Create(ctx context.Context, req resource.CreateRequest
 	var plan SidecarResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -164,6 +171,7 @@ func (r *SidecarResource) Create(ctx context.Context, req resource.CreateRequest
 	// Validate that at least one public key is provided
 	if err := r.validatePublicKeys(&plan); err != nil {
 		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
+
 		return
 	}
 
@@ -184,6 +192,7 @@ func (r *SidecarResource) Create(ctx context.Context, req resource.CreateRequest
 			"Error creating sidecar",
 			"Could not create sidecar, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -198,6 +207,7 @@ func (r *SidecarResource) Read(ctx context.Context, req resource.ReadRequest, re
 	var state SidecarResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -209,12 +219,14 @@ func (r *SidecarResource) Read(ctx context.Context, req resource.ReadRequest, re
 			"Error reading sidecar",
 			"Could not read sidecar ID "+state.ID.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	// If sidecar doesn't exist, remove it from state
 	if sidecar == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -226,11 +238,14 @@ func (r *SidecarResource) Read(ctx context.Context, req resource.ReadRequest, re
 }
 
 func (r *SidecarResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan SidecarResourceModel
-	var state SidecarResourceModel
+	var (
+		plan  SidecarResourceModel
+		state SidecarResourceModel
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -238,6 +253,7 @@ func (r *SidecarResource) Update(ctx context.Context, req resource.UpdateRequest
 	// Validate that at least one public key is provided
 	if err := r.validatePublicKeys(&plan); err != nil {
 		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
+
 		return
 	}
 
@@ -276,6 +292,7 @@ func (r *SidecarResource) Update(ctx context.Context, req resource.UpdateRequest
 			"Error updating sidecar",
 			"Could not update sidecar, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -290,6 +307,7 @@ func (r *SidecarResource) Delete(ctx context.Context, req resource.DeleteRequest
 	var state SidecarResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -301,6 +319,7 @@ func (r *SidecarResource) Delete(ctx context.Context, req resource.DeleteRequest
 			"Error deleting sidecar",
 			"Could not delete sidecar, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 }

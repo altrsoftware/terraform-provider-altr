@@ -1,7 +1,10 @@
+# Copyright (c) ALTR Solutions, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 terraform {
   required_providers {
-    aws = {
-      source  = "altr"
+    altr = {
+      source  = "altrsoftware/altr"
       version = "~> 1.0"
     }
   }
@@ -9,8 +12,8 @@ terraform {
 
 # Configure the ALTR Provider
 provider "altr" {
-    api_key  = "my-api-key"
-    base_url = "https://sc-control.live.altr.com"
-    org_id   = "my-org-id"
-    secret   = "my-secret"
+  api_key  = "api-key"
+  base_url = "https://org-id.altrnet.live.altr.com"
+  org_id   = "org-id"
+  secret   = "api-secret"
 }

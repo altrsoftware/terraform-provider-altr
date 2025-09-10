@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package acctest
 
 import (
@@ -14,5 +17,6 @@ func RandString(length int) string {
 	for i := range b {
 		b[i] = charset[r.Intn(len(charset))]
 	}
+
 	return string(b)
 }
