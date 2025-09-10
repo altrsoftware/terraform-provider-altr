@@ -10,7 +10,6 @@ import (
 
 	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -173,154 +172,20 @@ func (d *ImpersonationPolicyDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	// Map the API response to the Terraform model
-	config.Name = types.StringValue(policy.Name)
-	config.Description = types.StringValue(policy.Description)
-	config.RepoName = types.StringValue(policy.RepoName)
-	config.Rules = convertImpersonationRulesToTerraform(policy.Rules)
-	config.CreatedAt = types.StringValue(policy.CreatedAt)
-	config.UpdatedAt = types.StringValue(policy.UpdatedAt)
+	// Map response to the model
+	d.mapPolicyToModel(policy, &config)
 
-	// Set the state
+	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
 }
 
-// Helper function to convert rules from the API response to Terraform model
-func convertImpersonationRulesToTerraform(rules []client.ImpersonationRule) types.List {
-	if len(rules) == 0 {
-		return types.ListNull(types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"actors": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-				},
-				"targets": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-				},
-			},
-		})
-	}
-
-	var terraformRules []attr.Value
-	for _, rule := range rules {
-		// Convert actors
-		var terraformActors []attr.Value
-		for _, actor := range rule.Actors {
-			actorValue, _ := types.ObjectValue(
-				map[string]attr.Type{
-					"type":        types.StringType,
-					"identifiers": types.ListType{ElemType: types.StringType},
-					"condition":   types.StringType,
-				},
-				map[string]attr.Value{
-					"type":        types.StringValue(actor.Type),
-					"identifiers": convertStringListToTerraform(actor.Identifiers),
-					"condition":   types.StringValue(actor.Condition),
-				},
-			)
-			terraformActors = append(terraformActors, actorValue)
-		}
-
-		// Convert targets
-		var terraformTargets []attr.Value
-		for _, target := range rule.Targets {
-			targetValue, _ := types.ObjectValue(
-				map[string]attr.Type{
-					"type":        types.StringType,
-					"identifiers": types.ListType{ElemType: types.StringType},
-					"condition":   types.StringType,
-				},
-				map[string]attr.Value{
-					"type":        types.StringValue(target.Type),
-					"identifiers": convertStringListToTerraform(target.Identifiers),
-					"condition":   types.StringValue(target.Condition),
-				},
-			)
-			terraformTargets = append(terraformTargets, targetValue)
-		}
-
-		// Append the rule to the Terraform rules
-		ruleValue, _ := types.ObjectValue(
-			map[string]attr.Type{
-				"actors": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-				},
-				"targets": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-				},
-			},
-			map[string]attr.Value{
-				"actors": types.ListValueMust(
-					types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-					terraformActors,
-				),
-				"targets": types.ListValueMust(
-					types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-					terraformTargets,
-				),
-			},
-		)
-		terraformRules = append(terraformRules, ruleValue)
-	}
-
-	return types.ListValueMust(
-		types.ObjectType{
-			AttrTypes: map[string]attr.Type{
-				"actors": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-				},
-				"targets": types.ListType{
-					ElemType: types.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"type":        types.StringType,
-							"identifiers": types.ListType{ElemType: types.StringType},
-							"condition":   types.StringType,
-						},
-					},
-				},
-			},
-		},
-		terraformRules,
-	)
+// Helper function to map API response to Terraform model
+func (d *ImpersonationPolicyDataSource) mapPolicyToModel(policy *client.ImpersonationPolicy, model *ImpersonationPolicyDataSourceModel) {
+	model.ID = types.StringValue(policy.ID)
+	model.Name = types.StringValue(policy.Name)
+	model.Description = types.StringValue(policy.Description)
+	model.RepoName = types.StringValue(policy.RepoName)
+	model.Rules = convertRulesToTerraform(policy.Rules)
+	model.CreatedAt = types.StringValue(policy.CreatedAt)
+	model.UpdatedAt = types.StringValue(policy.UpdatedAt)
 }

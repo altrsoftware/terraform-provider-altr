@@ -649,49 +649,6 @@ func convertAccessManagementSnowflakeActorsFromTerraform(actors types.List) []cl
 	return clientActors
 }
 
-func convertAccessManagementSnowflakeObjectsToTerraform(objects []client.AccessManagementSnowflakeObject) []attr.Value {
-	var terraformObjects []attr.Value
-	for _, object := range objects {
-		var terraformFQIdentifiers []attr.Value
-
-		if len(object.FullyQualifiedIdentifiers) > 0 {
-			for _, fqIdentifier := range object.FullyQualifiedIdentifiers {
-				fqValue, _ := types.ObjectValue(
-					SnowflakeFullyQualifiedIdentifiersType.AttrTypes,
-					map[string]attr.Value{
-						"database": types.StringValue(fqIdentifier.Database),
-						"schema":   types.StringValue(fqIdentifier.Schema),
-						"table":    types.StringValue(fqIdentifier.Table),
-						"view":     types.StringValue(fqIdentifier.View),
-					},
-				)
-				terraformFQIdentifiers = append(terraformFQIdentifiers, fqValue)
-			}
-		}
-
-		// Set `fully_qualified_identifiers` to null if empty
-		var fqIdentifiersList attr.Value
-		if len(terraformFQIdentifiers) == 0 {
-			fqIdentifiersList = types.ListNull(SnowflakeFullyQualifiedIdentifiersType)
-		} else {
-			fqIdentifiersList = types.ListValueMust(SnowflakeFullyQualifiedIdentifiersType, terraformFQIdentifiers)
-		}
-
-		objectValue, _ := types.ObjectValue(
-			SnowflakeObjectType.AttrTypes,
-			map[string]attr.Value{
-				"type":                        types.StringValue(object.Type),
-				"condition":                   types.StringValue(object.Condition),
-				"identifiers":                 convertStringListToTerraform(object.Identifiers),
-				"fully_qualified_identifiers": fqIdentifiersList,
-			},
-		)
-		terraformObjects = append(terraformObjects, objectValue)
-	}
-
-	return terraformObjects
-}
-
 func convertAccessManagementSnowflakeObjectsFromTerraform(objects types.List) []client.AccessManagementSnowflakeObject {
 	if objects.IsNull() || objects.IsUnknown() {
 		return nil

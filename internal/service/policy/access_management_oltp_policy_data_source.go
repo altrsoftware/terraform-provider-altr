@@ -237,18 +237,23 @@ func (d *AccessManagementOLTPPolicyDataSource) Read(ctx context.Context, req dat
 		return
 	}
 
-	// Map the API response to the Terraform model
-	config.Name = types.StringValue(policy.Name)
-	config.Description = types.StringValue(policy.Description)
-	config.RepoName = types.StringValue(policy.RepoName)
-	config.CaseSensitivity = types.StringValue(policy.CaseSensitivity)
-	config.DatabaseType = types.Int64Value(policy.DatabaseType)
-	config.DatabaseTypeName = types.StringValue(policy.DatabaseTypeName)
-	config.CreatedAt = types.StringValue(policy.CreatedAt)
-	config.UpdatedAt = types.StringValue(policy.UpdatedAt)
-	config.ID = types.StringValue(policy.ID)
-	config.Rules = convertAccessManagementOLTPRulesToTerraform(policy.Rules)
+	// Map response to the model
+	d.mapPolicyToModel(policy, &config)
 
-	// Set the state
+	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
+}
+
+// Helper function to map API response to Terraform model
+func (d *AccessManagementOLTPPolicyDataSource) mapPolicyToModel(policy *client.AccessManagementOLTPPolicy, model *AccessManagementOLTPPolicyDataSourceModel) {
+	model.ID = types.StringValue(policy.ID)
+	model.Name = types.StringValue(policy.Name)
+	model.Description = types.StringValue(policy.Description)
+	model.DatabaseTypeName = types.StringValue(policy.DatabaseTypeName)
+	model.DatabaseType = types.Int64Value(policy.DatabaseType)
+	model.CaseSensitivity = types.StringValue(policy.CaseSensitivity)
+	model.RepoName = types.StringValue(policy.RepoName)
+	model.Rules = convertAccessManagementOLTPRulesToTerraform(policy.Rules)
+	model.CreatedAt = types.StringValue(policy.CreatedAt)
+	model.UpdatedAt = types.StringValue(policy.UpdatedAt)
 }

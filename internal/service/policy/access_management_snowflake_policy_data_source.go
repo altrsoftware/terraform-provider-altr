@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/altrsoftware/terraform-provider-altr/internal/client"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -238,65 +237,37 @@ func (d *AccessManagementSnowflakePolicyDataSource) Read(ctx context.Context, re
 		return
 	}
 
-	// Get the Snowflake policy from the API
+	// Get access management snowflake policy from API
 	policy, err := d.client.GetAccessManagementSnowflakePolicy(config.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error reading Snowflake access management policy",
-			fmt.Sprintf("Could not read Snowflake access management policy with ID %s: %s", config.ID.ValueString(), err.Error()),
+			"Error reading access management snowflake policy",
+			"Could not read access management snowflake policy ID "+config.ID.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
-	// If the policy doesn't exist, return an error
+	// If policy doesn't exist, remove it from state
 	if policy == nil {
-		resp.Diagnostics.AddError(
-			"Snowflake access management policy not found",
-			fmt.Sprintf("Snowflake access management policy with ID '%s' does not exist.", config.ID.ValueString()),
-		)
+		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
-	// Map the API response to the Terraform model
-	config.Name = types.StringValue(policy.Name)
-	config.Description = types.StringValue(policy.Description)
-	//config.ConnectionIDs = convertInt64ListToTerraform(policy.ConnectionIDs)
-	config.Rules = convertAccessManagementSnowflakeRulesToTerraform(policy)
-	//config.PolicyMaintenance = convertPolicyMaintenanceToTerraform(policy.PolicyMaintenance)
-	config.CreatedAt = types.StringValue(policy.CreatedAt)
-	config.UpdatedAt = types.StringValue(policy.UpdatedAt)
+	// Map response to the model
+	d.mapPolicyToModel(policy, &config)
 
-	// Set the state
+	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
 }
 
-// Helper functions to map API responses to Terraform models
-func convertInt64ListToTerraform(ids []int64) types.List {
-	if len(ids) == 0 {
-		return types.ListNull(types.Int64Type)
-	}
-
-	var terraformIDs []attr.Value
-	for _, id := range ids {
-		terraformIDs = append(terraformIDs, types.Int64Value(id))
-	}
-
-	return types.ListValueMust(types.Int64Type, terraformIDs)
-}
-
-func convertPolicyMaintenanceToTerraform(maintenance *client.AccessManagementPolicyMaintenance) types.Object {
-	if maintenance == nil {
-		return types.ObjectNull(map[string]attr.Type{
-			"rate":  types.StringType,
-			"value": types.StringType,
-		})
-	}
-
-	return types.ObjectValueMust(map[string]attr.Type{
-		"rate":  types.StringType,
-		"value": types.StringType,
-	}, map[string]attr.Value{
-		"rate":  types.StringValue(maintenance.Rate),
-		"value": types.StringValue(maintenance.Value),
-	})
+// Helper function to map API response to Terraform model
+func (d *AccessManagementSnowflakePolicyDataSource) mapPolicyToModel(policy *client.AccessManagementSnowflakePolicy, model *AccessManagementSnowflakePolicyDataSourceModel) {
+	model.ID = types.StringValue(policy.ID)
+	model.Name = types.StringValue(policy.Name)
+	model.Description = types.StringValue(policy.Description)
+	model.Rules = convertAccessManagementSnowflakeRulesToTerraform(policy)
+	model.CreatedAt = types.StringValue(policy.CreatedAt)
+	model.UpdatedAt = types.StringValue(policy.UpdatedAt)
 }
