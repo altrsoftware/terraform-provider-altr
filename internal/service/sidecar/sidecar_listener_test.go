@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package sidecar_test
 
 import (
@@ -6,12 +9,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/acctest"
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-
-	"terraform-provider-altr/internal/acctest"
-	"terraform-provider-altr/internal/client"
 )
 
 func TestAccSidecarListenerResource_basic(t *testing.T) {

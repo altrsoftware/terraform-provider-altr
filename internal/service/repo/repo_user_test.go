@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package repo_test
 
 import (
@@ -9,8 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
-	"terraform-provider-altr/internal/acctest"
-	"terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/acctest"
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 )
 
 func TestAccRepoUserResource_basicAWSSecretsManager(t *testing.T) {
@@ -405,19 +408,6 @@ resource "altr_repo_user" "test" {
   repo_name = altr_repo.test.name
   username  = %[2]q
   
-  aws_secrets_manager = {
-    secrets_path = %[3]q
-  }
-}
-`, repoName, username, secretsPath)
-}
-
-func testAccRepoUserOnlyResourceConfig_basicAWSSecretsManager(repoName, username, secretsPath string) string {
-	return fmt.Sprintf(`
-resource "altr_repo_user" "test" {
-  repo_name = altr_repo.test.name
-  username  = %[2]q
-
   aws_secrets_manager = {
     secrets_path = %[3]q
   }

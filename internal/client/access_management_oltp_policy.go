@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package client
 
 import (
@@ -94,10 +97,9 @@ func (c *Client) CreateAccessManagementOLTPPolicy(input CreateAccessManagementOL
 
 // GetAccessManagementOLTPPolicy retrieves an access management OLTP policy by ID
 func (c *Client) GetAccessManagementOLTPPolicy(policyID string) (*AccessManagementOLTPPolicy, error) {
-
 	fmt.Println("getting id", policyID)
 
-	resp, err := c.makeRequest(http.MethodGet, fmt.Sprintf("/unified-policy/management/policy/%s", url.PathEscape(policyID)), nil, "external")
+	resp, err := c.makeRequest(http.MethodGet, "/unified-policy/management/policy/"+url.PathEscape(policyID), nil, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get access management OLTP policy: %w", err)
 	}
@@ -120,7 +122,7 @@ func (c *Client) GetAccessManagementOLTPPolicy(policyID string) (*AccessManageme
 // UpdateAccessManagementOLTPPolicy updates an existing access management OLTP policy
 // Update is not currently supported
 func (c *Client) UpdateAccessManagementOLTPPolicy(policyID string, input UpdateAccessManagementOLTPPolicyInput) (*AccessManagementOLTPPolicy, error) {
-	resp, err := c.makeRequest(http.MethodPatch, fmt.Sprintf("/unified-policy/management/access-management/oltp/%s", url.PathEscape(policyID)), input, "external")
+	resp, err := c.makeRequest(http.MethodPatch, "/unified-policy/management/access-management/oltp/"+url.PathEscape(policyID), input, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to update access management OLTP policy: %w", err)
 	}
@@ -135,7 +137,7 @@ func (c *Client) UpdateAccessManagementOLTPPolicy(policyID string, input UpdateA
 
 // DeleteAccessManagementOLTPPolicy deletes an access management OLTP policy
 func (c *Client) DeleteAccessManagementOLTPPolicy(policyID string) error {
-	resp, err := c.makeRequest(http.MethodDelete, fmt.Sprintf("/unified-policy/management/policy/%s", url.PathEscape(policyID)), nil, "external")
+	resp, err := c.makeRequest(http.MethodDelete, "/unified-policy/management/policy/"+url.PathEscape(policyID), nil, "external")
 	if err != nil {
 		return fmt.Errorf("failed to delete access management OLTP policy: %w", err)
 	}

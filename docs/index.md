@@ -11,10 +11,13 @@ ALTR Provider for managing ALTR SaaS resources.
 ## Example Usage
 
 ```terraform
+# Copyright (c) ALTR Solutions, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 terraform {
   required_providers {
-    aws = {
-      source  = "altr"
+    altr = {
+      source  = "altrsoftware/altr"
       version = "~> 1.0"
     }
   }
@@ -22,10 +25,10 @@ terraform {
 
 # Configure the ALTR Provider
 provider "altr" {
-    api_key  = "my-api-key"
-    base_url = "https://sc-control.live.altr.com"
-    org_id   = "my-org-id"
-    secret   = "my-secret"
+  api_key  = "api-key"
+  base_url = "https://org-id.altrnet.live.altr.com"
+  org_id   = "org-id"
+  secret   = "api-secret"
 }
 ```
 
@@ -47,10 +50,10 @@ The ALTR provider will use the following environment variables for configuration
 
 ### Example Environment Variables
 ```shell
-export ALTR_API_KEY="my-api-key"
-export ALTR_BASE_URL="https://altrnet.live.altr.com"
-export ALTR_ORG_ID="my-org-id"
-export ALTR_SECRET="my-secret"
+export ALTR_API_KEY="api-key"
+export ALTR_BASE_URL="https://org-id.altrnet.live.altr.com"
+export ALTR_ORG_ID="org-id"
+export ALTR_SECRET="api-secret"
 ```
 
 ## Provider Configuration
@@ -59,13 +62,3 @@ The ALTR provider can be configured using the following parameters in the provid
 - `base_url`: The base URL for the ALTR API.
 - `org_id`: The organization ID for your ALTR account.
 - `secret`: The secret key for your ALTR account.
-
-### Example Provider Configuration
-```terraform
-provider "altr" {
-  api_key  = "my-api-key"
-  base_url = "https://sc-control.live.altr.com"
-  org_id   = "my-org-id"
-  secret   = "my-secret"
-}
-```

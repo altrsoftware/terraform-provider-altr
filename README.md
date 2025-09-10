@@ -136,6 +136,15 @@ bash
 TF_ACC=1 go test ./... -v
 ```
 
+### Generating Documentation
+
+Generate terraform documentation:
+```
+bash
+cd ./tools
+go generate
+```
+
 ### Linting and Formatting
 
 Ensure code quality:

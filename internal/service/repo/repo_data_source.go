@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package repo
 
 import (
@@ -5,14 +8,13 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"terraform-provider-altr/internal/client"
-	"terraform-provider-altr/internal/service"
 )
 
 var _ datasource.DataSource = &RepoDataSource{}
@@ -109,6 +111,7 @@ func (d *RepoDataSource) Configure(ctx context.Context, req datasource.Configure
 			"Unexpected Data Source Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -119,6 +122,7 @@ func (d *RepoDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	var config RepoDataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -130,6 +134,7 @@ func (d *RepoDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"Error reading repository",
 			"Could not read repository "+config.Name.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
@@ -139,6 +144,7 @@ func (d *RepoDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"Repository not found",
 			"Repository with name '"+config.Name.ValueString()+"' does not exist.",
 		)
+
 		return
 	}
 

@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package policy_test
 
 import (
@@ -10,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
-	"terraform-provider-altr/internal/acctest"
-	"terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/acctest"
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 )
 
 func TestAccAccessManagementOLTPPolicyResource_basic(t *testing.T) {
@@ -94,7 +97,7 @@ func TestAccAccessManagementOLTPPolicyResource_invalidRules(t *testing.T) {
 		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccAccessManagementOLTPPolicyResourceConfig_invalidRules(policyName, repoName),
+				Config:      testAccAccessManagementOLTPPolicyResourceConfig_invalidRules(policyName, repoName),
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value`),
 			},
 		},

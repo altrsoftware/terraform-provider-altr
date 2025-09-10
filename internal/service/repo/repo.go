@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package repo
 
 import (
@@ -5,6 +8,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -15,13 +20,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"terraform-provider-altr/internal/client"
-	"terraform-provider-altr/internal/service"
 )
 
-var _ resource.Resource = &RepoResource{}
-var _ resource.ResourceWithImportState = &RepoResource{}
+var (
+	_ resource.Resource                = &RepoResource{}
+	_ resource.ResourceWithImportState = &RepoResource{}
+)
 
 func NewRepoResource() resource.Resource {
 	return &RepoResource{}
@@ -141,6 +145,7 @@ func (r *RepoResource) Configure(ctx context.Context, req resource.ConfigureRequ
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -151,6 +156,7 @@ func (r *RepoResource) Create(ctx context.Context, req resource.CreateRequest, r
 	var plan RepoResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -171,6 +177,7 @@ func (r *RepoResource) Create(ctx context.Context, req resource.CreateRequest, r
 			"Error creating repository",
 			"Could not create repository, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -185,6 +192,7 @@ func (r *RepoResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	var state RepoResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -196,12 +204,14 @@ func (r *RepoResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 			"Error reading repository",
 			"Could not read repository "+state.Name.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	// If repo doesn't exist, remove it from state
 	if repo == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -213,11 +223,14 @@ func (r *RepoResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 }
 
 func (r *RepoResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan RepoResourceModel
-	var state RepoResourceModel
+	var (
+		plan  RepoResourceModel
+		state RepoResourceModel
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -237,6 +250,7 @@ func (r *RepoResource) Update(ctx context.Context, req resource.UpdateRequest, r
 			"Error updating repository",
 			"Could not update repository, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -251,6 +265,7 @@ func (r *RepoResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	var state RepoResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -262,6 +277,7 @@ func (r *RepoResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 			"Error deleting repository",
 			"Could not delete repository. Note: A repository cannot be deleted if it has users or sidecar bindings. Error: "+err.Error(),
 		)
+
 		return
 	}
 }

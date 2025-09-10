@@ -1,1 +1,0 @@
-terraform import altr_repo.<my_sidecar> <sidecar_id>

@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package repo
 
 import (
@@ -7,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -17,13 +22,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"terraform-provider-altr/internal/client"
-	"terraform-provider-altr/internal/service"
 )
 
-var _ resource.Resource = &RepoSidecarBindingResource{}
-var _ resource.ResourceWithImportState = &RepoSidecarBindingResource{}
+var (
+	_ resource.Resource                = &RepoSidecarBindingResource{}
+	_ resource.ResourceWithImportState = &RepoSidecarBindingResource{}
+)
 
 func NewRepoSidecarBindingResource() resource.Resource {
 	return &RepoSidecarBindingResource{}
@@ -103,6 +107,7 @@ func (r *RepoSidecarBindingResource) Configure(ctx context.Context, req resource
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -113,6 +118,7 @@ func (r *RepoSidecarBindingResource) Create(ctx context.Context, req resource.Cr
 	var plan RepoSidecarBindingResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -128,6 +134,7 @@ func (r *RepoSidecarBindingResource) Create(ctx context.Context, req resource.Cr
 			"Error creating repo sidecar binding",
 			"Could not create repo sidecar binding, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -145,6 +152,7 @@ func (r *RepoSidecarBindingResource) Read(ctx context.Context, req resource.Read
 	var state RepoSidecarBindingResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -164,12 +172,14 @@ func (r *RepoSidecarBindingResource) Read(ctx context.Context, req resource.Read
 				state.RepoName.ValueString(),
 				err.Error()),
 		)
+
 		return
 	}
 
 	// If binding doesn't exist, remove it from state
 	if binding == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -193,6 +203,7 @@ func (r *RepoSidecarBindingResource) Delete(ctx context.Context, req resource.De
 	var state RepoSidecarBindingResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -208,6 +219,7 @@ func (r *RepoSidecarBindingResource) Delete(ctx context.Context, req resource.De
 			"Error deleting repo sidecar binding",
 			"Could not delete repo sidecar binding, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 }
@@ -220,6 +232,7 @@ func (r *RepoSidecarBindingResource) ImportState(ctx context.Context, req resour
 			"Invalid Import ID",
 			"Expected import ID in format: sidecar_id:port:repo_name",
 		)
+
 		return
 	}
 
@@ -233,6 +246,7 @@ func (r *RepoSidecarBindingResource) ImportState(ctx context.Context, req resour
 			"Invalid Port in Import ID",
 			"Port must be a valid integer: "+err.Error(),
 		)
+
 		return
 	}
 

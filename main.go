@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -5,14 +8,11 @@ import (
 	"flag"
 	"log"
 
-	"terraform-provider-altr/internal/provider"
-
+	"github.com/altrsoftware/terraform-provider-altr/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
-var (
-	version string = "dev"
-)
+var version string = "dev"
 
 func main() {
 	var debug bool

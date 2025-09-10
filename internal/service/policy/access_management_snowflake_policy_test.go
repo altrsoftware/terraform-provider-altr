@@ -1,13 +1,15 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package policy_test
 
 import (
 	"fmt"
 	"testing"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-
-	"terraform-provider-altr/internal/acctest"
 )
 
 func TestAccAccessManagementSnowflakePolicy_basic(t *testing.T) {
