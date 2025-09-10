@@ -1,9 +1,14 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package policy
 
 import (
 	"context"
 	"fmt"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	customvalidation "github.com/altrsoftware/terraform-provider-altr/internal/validation"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -18,13 +23,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"terraform-provider-altr/internal/client"
-	customvalidation "terraform-provider-altr/internal/validation"
 )
 
-var _ resource.Resource = &AccessManagementOLTPPolicyResource{}
-var _ resource.ResourceWithImportState = &AccessManagementOLTPPolicyResource{}
+var (
+	_ resource.Resource                = &AccessManagementOLTPPolicyResource{}
+	_ resource.ResourceWithImportState = &AccessManagementOLTPPolicyResource{}
+)
 
 func NewAccessManagementOltpPolicyDataResource() resource.Resource {
 	return &AccessManagementOLTPPolicyResource{}
@@ -344,6 +348,7 @@ func (r *AccessManagementOLTPPolicyResource) Configure(ctx context.Context, req 
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -354,6 +359,7 @@ func (r *AccessManagementOLTPPolicyResource) Create(ctx context.Context, req res
 	var plan AccessManagementOLTPPolicyResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -379,6 +385,7 @@ func (r *AccessManagementOLTPPolicyResource) Create(ctx context.Context, req res
 			"Error creating access management oltp policy",
 			"Could not create access management oltp policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -393,6 +400,7 @@ func (r *AccessManagementOLTPPolicyResource) Read(ctx context.Context, req resou
 	var state AccessManagementOLTPPolicyResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -404,12 +412,14 @@ func (r *AccessManagementOLTPPolicyResource) Read(ctx context.Context, req resou
 			"Error reading access management oltp policy",
 			"Could not read access management oltp policy ID "+state.ID.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	// If policy doesn't exist, remove it from state
 	if policy == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -421,11 +431,14 @@ func (r *AccessManagementOLTPPolicyResource) Read(ctx context.Context, req resou
 }
 
 func (r *AccessManagementOLTPPolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan AccessManagementOLTPPolicyResourceModel
-	var state AccessManagementOLTPPolicyResourceModel
+	var (
+		plan  AccessManagementOLTPPolicyResourceModel
+		state AccessManagementOLTPPolicyResourceModel
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -447,6 +460,7 @@ func (r *AccessManagementOLTPPolicyResource) Update(ctx context.Context, req res
 			"Error updating access management oltp policy",
 			"Could not update access management oltp policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -461,6 +475,7 @@ func (r *AccessManagementOLTPPolicyResource) Delete(ctx context.Context, req res
 	var state AccessManagementOLTPPolicyResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -472,6 +487,7 @@ func (r *AccessManagementOLTPPolicyResource) Delete(ctx context.Context, req res
 			"Error deleting access management oltp policy",
 			"Could not delete access management oltp policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 }
@@ -507,6 +523,7 @@ func convertAccessManagementOLTPRulesFromTerraform(rules types.List) []client.Ac
 		if !ok {
 			continue
 		}
+
 		ruleAttrs := ruleObj.Attributes()
 
 		ruleTypeAttr, _ := ruleAttrs["type"].(types.String)
@@ -540,6 +557,7 @@ func convertAccessManagementOLTPActorsFromTerraform(actors types.List) []client.
 		if !ok {
 			continue
 		}
+
 		actorAttrs := actorObj.Attributes()
 
 		actorTypeAttr, _ := actorAttrs["type"].(types.String)
@@ -549,7 +567,9 @@ func convertAccessManagementOLTPActorsFromTerraform(actors types.List) []client.
 		condition := conditionAttr.ValueString()
 
 		identifiersAttr, _ := actorAttrs["identifiers"].(types.List)
+
 		var identifiers []string
+
 		for _, identifier := range identifiersAttr.Elements() {
 			if idStr, ok := identifier.(types.String); ok {
 				identifiers = append(identifiers, idStr.ValueString())
@@ -572,11 +592,13 @@ func convertAccessManagementOLTPObjectsFromTerraform(objects types.List) []clien
 	}
 
 	var clientObjects []client.AccessManagementOLTPObject
+
 	for _, object := range objects.Elements() {
 		objectObj, ok := object.(types.Object)
 		if !ok {
 			continue
 		}
+
 		objectAttrs := objectObj.Attributes()
 
 		ruleTypeAttr, _ := objectAttrs["type"].(types.String)
@@ -606,6 +628,7 @@ func convertAccessManagementOLTPIdentifiersFromTerraform(identifiers types.List)
 		if !ok {
 			continue
 		}
+
 		identifierAttrs := identifierObj.Attributes()
 
 		databaseAttr, _ := identifierAttrs["database"].(types.Object)
@@ -648,8 +671,11 @@ func convertAccessManagementOLTPRulesToTerraform(rules []client.AccessManagement
 		return types.ListNull(OLTPRuleType)
 	}
 
-	var terraformRules []attr.Value
-	var diagnostics diag.Diagnostics
+	var (
+		terraformRules []attr.Value
+		diagnostics    diag.Diagnostics
+	)
+
 	for _, rule := range rules {
 		// Convert actors
 		var terraformActors []attr.Value
@@ -663,6 +689,7 @@ func convertAccessManagementOLTPRulesToTerraform(rules []client.AccessManagement
 				},
 			)
 			diagnostics.Append(actorDiags...)
+
 			terraformActors = append(terraformActors, actorValue)
 		}
 
@@ -703,6 +730,7 @@ func convertAccessManagementOLTPRulesToTerraform(rules []client.AccessManagement
 				},
 			)
 			diagnostics.Append(objectDiags...)
+
 			terraformObjects = append(terraformObjects, objectValue)
 		}
 
@@ -715,6 +743,7 @@ func convertAccessManagementOLTPRulesToTerraform(rules []client.AccessManagement
 			},
 		)
 		diagnostics.Append(ruleDiags...)
+
 		terraformRules = append(terraformRules, ruleValue)
 	}
 

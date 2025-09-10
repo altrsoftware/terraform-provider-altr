@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package validation
 
 import (
@@ -44,6 +47,7 @@ func (v UniqueStringListValidator) ValidateList(ctx context.Context, req validat
 				"Invalid Element Type",
 				"Expected string element in list",
 			)
+
 			continue
 		}
 

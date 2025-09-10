@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package service
 
 const (
@@ -6,11 +9,9 @@ const (
 	HostnameRegexStringRFC1123     = `^([a-zA-Z0-9]{1}[a-zA-Z0-9-]{0,62}){1}(\.[a-zA-Z0-9]{1}[a-zA-Z0-9-]{0,62})*?$`
 )
 
-var (
-	OltpDatabaseTypes = []string{
-		"Oracle",
-		"MSSQL",
-		"MySQL",
-		"Postgres",
-	}
-)
+var OltpDatabaseTypes = []string{
+	"Oracle",
+	"MSSQL",
+	"MySQL",
+	"Postgres",
+}

@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package sidecar
 
 import (
@@ -7,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -17,13 +22,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"terraform-provider-altr/internal/client"
-	"terraform-provider-altr/internal/service"
 )
 
-var _ resource.Resource = &SidecarListenerResource{}
-var _ resource.ResourceWithImportState = &SidecarListenerResource{}
+var (
+	_ resource.Resource                = &SidecarListenerResource{}
+	_ resource.ResourceWithImportState = &SidecarListenerResource{}
+)
 
 func NewSidecarListenerResource() resource.Resource {
 	return &SidecarListenerResource{}
@@ -115,6 +119,7 @@ func (r *SidecarListenerResource) Configure(ctx context.Context, req resource.Co
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -125,6 +130,7 @@ func (r *SidecarListenerResource) Create(ctx context.Context, req resource.Creat
 	var plan SidecarListenerResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -147,6 +153,7 @@ func (r *SidecarListenerResource) Create(ctx context.Context, req resource.Creat
 			"Error registering sidecar listener",
 			"Could not register sidecar listener, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -161,6 +168,7 @@ func (r *SidecarListenerResource) Read(ctx context.Context, req resource.ReadReq
 	var state SidecarListenerResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -172,12 +180,14 @@ func (r *SidecarListenerResource) Read(ctx context.Context, req resource.ReadReq
 			"Error reading sidecar listener",
 			"Could not read sidecar listener for sidecar "+state.SidecarID.ValueString()+" on port "+strconv.FormatInt(state.Port.ValueInt64(), 10)+": "+err.Error(),
 		)
+
 		return
 	}
 
 	// If listener doesn't exist, remove it from state
 	if listener == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -201,6 +211,7 @@ func (r *SidecarListenerResource) Delete(ctx context.Context, req resource.Delet
 	var state SidecarListenerResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -212,6 +223,7 @@ func (r *SidecarListenerResource) Delete(ctx context.Context, req resource.Delet
 			"Error deregistering sidecar listener",
 			"Could not deregister sidecar listener, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 }
@@ -224,6 +236,7 @@ func (r *SidecarListenerResource) ImportState(ctx context.Context, req resource.
 			"Invalid Import ID",
 			"Expected import ID in format: sidecar_id:port",
 		)
+
 		return
 	}
 
@@ -236,6 +249,7 @@ func (r *SidecarListenerResource) ImportState(ctx context.Context, req resource.
 			"Invalid Port in Import ID",
 			"Port must be a valid integer: "+err.Error(),
 		)
+
 		return
 	}
 

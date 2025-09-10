@@ -1,10 +1,15 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -15,12 +20,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-
-	"terraform-provider-altr/internal/client"
 )
 
-var _ resource.Resource = &RepoUserResource{}
-var _ resource.ResourceWithImportState = &RepoUserResource{}
+var (
+	_ resource.Resource                = &RepoUserResource{}
+	_ resource.ResourceWithImportState = &RepoUserResource{}
+)
 
 func NewRepoUserResource() resource.Resource {
 	return &RepoUserResource{}
@@ -140,6 +145,7 @@ func (r *RepoUserResource) Configure(ctx context.Context, req resource.Configure
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -150,6 +156,7 @@ func (r *RepoUserResource) Create(ctx context.Context, req resource.CreateReques
 	var plan RepoUserResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -157,6 +164,7 @@ func (r *RepoUserResource) Create(ctx context.Context, req resource.CreateReques
 	// Validate that exactly one credential store is specified
 	if err := r.validateCredentialStore(&plan); err != nil {
 		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
+
 		return
 	}
 
@@ -170,11 +178,14 @@ func (r *RepoUserResource) Create(ctx context.Context, req resource.CreateReques
 		secretsPath := plan.AWSSecretsManager.Attributes()["secrets_path"].(types.String)
 		if secretsPath.IsNull() || secretsPath.ValueString() == "" {
 			resp.Diagnostics.AddError("Invalid Configuration", "aws_secrets_manager.secrets_path must be specified and non-empty")
+
 			return
 		}
+
 		input.AWSSecretsManager = &client.AWSSecretsManager{
 			SecretsPath: secretsPath.ValueString(),
 		}
+
 		iamRole := plan.AWSSecretsManager.Attributes()["iam_role"].(types.String)
 		if !iamRole.IsNull() && iamRole.ValueString() != "" {
 			input.AWSSecretsManager.IAMRole = iamRole.ValueString()
@@ -188,12 +199,16 @@ func (r *RepoUserResource) Create(ctx context.Context, req resource.CreateReques
 	if !plan.AzureKeyVault.IsNull() {
 		keyVaultURI := plan.AzureKeyVault.Attributes()["key_vault_uri"].(types.String)
 		secretName := plan.AzureKeyVault.Attributes()["secret_name"].(types.String)
+
 		if keyVaultURI.IsNull() || keyVaultURI.ValueString() == "" {
 			resp.Diagnostics.AddError("Invalid Configuration", "azure_key_vault.key_vault_uri must be specified and non-empty")
+
 			return
 		}
+
 		if secretName.IsNull() || secretName.ValueString() == "" {
 			resp.Diagnostics.AddError("Invalid Configuration", "azure_key_vault.secret_name must be specified and non-empty")
+
 			return
 		}
 
@@ -214,6 +229,7 @@ func (r *RepoUserResource) Create(ctx context.Context, req resource.CreateReques
 			"Error creating repository user",
 			"Could not create repository user, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -233,6 +249,7 @@ func (r *RepoUserResource) Read(ctx context.Context, req resource.ReadRequest, r
 	var state RepoUserResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -244,12 +261,14 @@ func (r *RepoUserResource) Read(ctx context.Context, req resource.ReadRequest, r
 			"Error reading repository user",
 			"Could not read repository user "+state.Username.ValueString()+" in repo "+state.RepoName.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	// If repo user doesn't exist, remove it from state
 	if repoUser == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -261,11 +280,14 @@ func (r *RepoUserResource) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 func (r *RepoUserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan RepoUserResourceModel
-	var state RepoUserResourceModel
+	var (
+		plan  RepoUserResourceModel
+		state RepoUserResourceModel
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -273,6 +295,7 @@ func (r *RepoUserResource) Update(ctx context.Context, req resource.UpdateReques
 	// Validate that exactly one credential store is specified
 	if err := r.validateCredentialStore(&plan); err != nil {
 		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
+
 		return
 	}
 
@@ -285,6 +308,7 @@ func (r *RepoUserResource) Update(ctx context.Context, req resource.UpdateReques
 			input.AWSSecretsManager = &client.AWSSecretsManager{
 				SecretsPath: secretsPath.ValueString(),
 			}
+
 			iamRole := plan.AWSSecretsManager.Attributes()["iam_role"].(types.String)
 			if !iamRole.IsNull() && iamRole.ValueString() != "" {
 				input.AWSSecretsManager.IAMRole = iamRole.ValueString()
@@ -314,6 +338,7 @@ func (r *RepoUserResource) Update(ctx context.Context, req resource.UpdateReques
 			"Error updating repository user",
 			"Could not update repository user, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -328,6 +353,7 @@ func (r *RepoUserResource) Delete(ctx context.Context, req resource.DeleteReques
 	var state RepoUserResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -339,6 +365,7 @@ func (r *RepoUserResource) Delete(ctx context.Context, req resource.DeleteReques
 			"Error deleting repository user",
 			"Could not delete repository user, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 }
@@ -351,6 +378,7 @@ func (r *RepoUserResource) ImportState(ctx context.Context, req resource.ImportS
 			"Invalid Import ID",
 			"Expected import ID in format: repo_name:username",
 		)
+
 		return
 	}
 
@@ -369,15 +397,17 @@ func (r *RepoUserResource) validateCredentialStore(model *RepoUserResourceModel)
 	if !model.AWSSecretsManager.IsNull() {
 		credentialStores++
 	}
+
 	if !model.AzureKeyVault.IsNull() {
 		credentialStores++
 	}
 
 	if credentialStores == 0 {
-		return fmt.Errorf("exactly one credential store must be specified (aws_secrets_manager or azure_key_vault)")
+		return errors.New("exactly one credential store must be specified (aws_secrets_manager or azure_key_vault)")
 	}
+
 	if credentialStores > 1 {
-		return fmt.Errorf("only one credential store can be specified at a time")
+		return errors.New("only one credential store can be specified at a time")
 	}
 
 	return nil

@@ -1,10 +1,14 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package policy
 
 import (
 	"context"
 	"fmt"
-	customvalidation "terraform-provider-altr/internal/validation"
 
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	customvalidation "github.com/altrsoftware/terraform-provider-altr/internal/validation"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -17,12 +21,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"terraform-provider-altr/internal/client"
 )
 
-var _ resource.Resource = &AccessManagementSnowflakePolicyResource{}
-var _ resource.ResourceWithImportState = &AccessManagementSnowflakePolicyResource{}
+var (
+	_ resource.Resource                = &AccessManagementSnowflakePolicyResource{}
+	_ resource.ResourceWithImportState = &AccessManagementSnowflakePolicyResource{}
+)
 
 func NewAccessManagementSnowflakePolicyDataResource() resource.Resource {
 	return &AccessManagementSnowflakePolicyResource{}
@@ -404,6 +408,7 @@ func (r *AccessManagementSnowflakePolicyResource) Configure(ctx context.Context,
 			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
+
 		return
 	}
 
@@ -414,6 +419,7 @@ func (r *AccessManagementSnowflakePolicyResource) Create(ctx context.Context, re
 	var plan AccessManagementSnowflakePolicyResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -437,12 +443,12 @@ func (r *AccessManagementSnowflakePolicyResource) Create(ctx context.Context, re
 
 	// Call the API to create the access management snowflake policy
 	policy, err := r.client.CreateAccessManagementSnowflakePolicy(input)
-
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating access management snowflake policy",
 			"Could not create access management snowflake policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -457,6 +463,7 @@ func (r *AccessManagementSnowflakePolicyResource) Read(ctx context.Context, req 
 	var state AccessManagementSnowflakePolicyResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -468,12 +475,14 @@ func (r *AccessManagementSnowflakePolicyResource) Read(ctx context.Context, req 
 			"Error reading access management snowflake policy",
 			"Could not read access management snowflake policy ID "+state.ID.ValueString()+": "+err.Error(),
 		)
+
 		return
 	}
 
 	// If policy doesn't exist, remove it from state
 	if policy == nil {
 		resp.State.RemoveResource(ctx)
+
 		return
 	}
 
@@ -485,11 +494,14 @@ func (r *AccessManagementSnowflakePolicyResource) Read(ctx context.Context, req 
 }
 
 func (r *AccessManagementSnowflakePolicyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan AccessManagementSnowflakePolicyResourceModel
-	var state AccessManagementSnowflakePolicyResourceModel
+	var (
+		plan  AccessManagementSnowflakePolicyResourceModel
+		state AccessManagementSnowflakePolicyResourceModel
+	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -511,6 +523,7 @@ func (r *AccessManagementSnowflakePolicyResource) Update(ctx context.Context, re
 			"Error updating access management snowflake policy",
 			"Could not update access management snowflake policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -525,6 +538,7 @@ func (r *AccessManagementSnowflakePolicyResource) Delete(ctx context.Context, re
 	var state AccessManagementSnowflakePolicyResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -536,6 +550,7 @@ func (r *AccessManagementSnowflakePolicyResource) Delete(ctx context.Context, re
 			"Error deleting access management snowflake policy",
 			"Could not delete access management snowflake policy, unexpected error: "+err.Error(),
 		)
+
 		return
 	}
 }
@@ -567,6 +582,7 @@ func convertAccessManagementSnowflakeRulesFromTerraform(rules types.List) []clie
 		if !ok {
 			continue
 		}
+
 		ruleAttrs := ruleObj.Attributes()
 
 		actorsList, _ := ruleAttrs["actors"].(types.List)
@@ -604,6 +620,7 @@ func convertAccessManagementSnowflakeActorsFromTerraform(actors types.List) []cl
 		if !ok {
 			continue
 		}
+
 		actorAttrs := actorObj.Attributes()
 
 		actorTypeAttr, _ := actorAttrs["type"].(types.String)
@@ -613,7 +630,9 @@ func convertAccessManagementSnowflakeActorsFromTerraform(actors types.List) []cl
 		condition := conditionAttr.ValueString()
 
 		identifiersAttr, _ := actorAttrs["identifiers"].(types.List)
+
 		var identifiers []string
+
 		for _, identifier := range identifiersAttr.Elements() {
 			if idStr, ok := identifier.(types.String); ok {
 				identifiers = append(identifiers, idStr.ValueString())
@@ -634,6 +653,7 @@ func convertAccessManagementSnowflakeObjectsToTerraform(objects []client.AccessM
 	var terraformObjects []attr.Value
 	for _, object := range objects {
 		var terraformFQIdentifiers []attr.Value
+
 		if len(object.FullyQualifiedIdentifiers) > 0 {
 			for _, fqIdentifier := range object.FullyQualifiedIdentifiers {
 				fqValue, _ := types.ObjectValue(
@@ -668,6 +688,7 @@ func convertAccessManagementSnowflakeObjectsToTerraform(objects []client.AccessM
 		)
 		terraformObjects = append(terraformObjects, objectValue)
 	}
+
 	return terraformObjects
 }
 
@@ -677,11 +698,13 @@ func convertAccessManagementSnowflakeObjectsFromTerraform(objects types.List) []
 	}
 
 	var clientObjects []client.AccessManagementSnowflakeObject
+
 	for _, object := range objects.Elements() {
 		objectObj, ok := object.(types.Object)
 		if !ok {
 			continue
 		}
+
 		objectAttrs := objectObj.Attributes()
 
 		ruleTypeAttr, _ := objectAttrs["type"].(types.String)
@@ -691,7 +714,9 @@ func convertAccessManagementSnowflakeObjectsFromTerraform(objects types.List) []
 		condition := conditionAttr.ValueString()
 
 		identifiersAttr, _ := objectAttrs["identifiers"].(types.List)
+
 		var identifiers []string
+
 		for _, identifier := range identifiersAttr.Elements() {
 			if idStr, ok := identifier.(types.String); ok {
 				identifiers = append(identifiers, idStr.ValueString())
@@ -699,12 +724,14 @@ func convertAccessManagementSnowflakeObjectsFromTerraform(objects types.List) []
 		}
 
 		var fullyQualifiedIdentifiers []client.AccessManagementSnowflakeFullyQualifiedIdentifiers
+
 		fqIdentifiersAttr, _ := objectAttrs["fully_qualified_identifiers"].(types.List)
 		for _, fqIdentifier := range fqIdentifiersAttr.Elements() {
 			fqObj, ok := fqIdentifier.(types.Object)
 			if !ok {
 				continue
 			}
+
 			fqAttrs := fqObj.Attributes()
 
 			fullyQualifiedIdentifiers = append(fullyQualifiedIdentifiers, client.AccessManagementSnowflakeFullyQualifiedIdentifiers{
@@ -738,10 +765,13 @@ func convertAccessManagementSnowflakeTaggedObjectsFromTerraform(taggedObjects ty
 		if !ok {
 			continue
 		}
+
 		taggedObjectAttrs := taggedObjectObj.Attributes()
 
 		checkAgainstAttr, _ := taggedObjectAttrs["check_against"].(types.List)
+
 		var checkAgainst []string
+
 		for _, check := range checkAgainstAttr.Elements() {
 			if checkStr, ok := check.(types.String); ok {
 				checkAgainst = append(checkAgainst, checkStr.ValueString())
@@ -776,6 +806,7 @@ func convertAccessManagementSnowflakeTaggedWithFromTerraform(taggedWith types.Li
 		if !ok {
 			continue
 		}
+
 		tagAttrs := tagObj.Attributes()
 
 		databaseAttr, _ := tagAttrs["database"].(types.String)
@@ -806,6 +837,7 @@ func convertAccessManagementSnowflakeAccessFromTerraform(access types.List) []cl
 		if !ok {
 			continue
 		}
+
 		accAttrs := accObj.Attributes()
 
 		nameAttr, _ := accAttrs["name"].(types.String)
@@ -833,8 +865,11 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 		return types.ListNull(SnowflakeRuleType)
 	}
 
-	var terraformRules []attr.Value
-	var diagnostics diag.Diagnostics
+	var (
+		terraformRules []attr.Value
+		diagnostics    diag.Diagnostics
+	)
+
 	for _, rule := range rules {
 		// Convert actors
 		var terraformActors []attr.Value
@@ -848,12 +883,14 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 				},
 			)
 			diagnostics.Append(actorDiags...)
+
 			terraformActors = append(terraformActors, actorValue)
 		}
 
 		// Convert objects
 		var terraformObjects []attr.Value
-		if rule.Objects != nil && len(rule.Objects) > 0 {
+
+		if len(rule.Objects) > 0 {
 			for _, object := range rule.Objects {
 				objectValue, objectDiags := types.ObjectValue(
 					SnowflakeObjectType.AttrTypes,
@@ -865,6 +902,7 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 					},
 				)
 				diagnostics.Append(objectDiags...)
+
 				terraformObjects = append(terraformObjects, objectValue)
 			}
 		}
@@ -879,7 +917,8 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 
 		// Convert tagged objects
 		var terraformTaggedObjects []attr.Value
-		if rule.TaggedObjects != nil && len(rule.TaggedObjects) > 0 {
+
+		if len(rule.TaggedObjects) > 0 {
 			for _, taggedObject := range rule.TaggedObjects {
 				var terraformTaggedWith []attr.Value
 				for _, tag := range taggedObject.TaggedWith {
@@ -893,6 +932,7 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 						},
 					)
 					diagnostics.Append(tagDiags...)
+
 					terraformTaggedWith = append(terraformTaggedWith, tagValue)
 				}
 
@@ -905,6 +945,7 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 					},
 				)
 				diagnostics.Append(taggedObjectDiags...)
+
 				terraformTaggedObjects = append(terraformTaggedObjects, taggedObjectValue)
 			}
 		}
@@ -927,6 +968,7 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 				},
 			)
 			diagnostics.Append(accessDiags...)
+
 			terraformAccess = append(terraformAccess, accessValue)
 		}
 
@@ -940,6 +982,7 @@ func convertAccessManagementSnowflakeRulesToTerraform(policy *client.AccessManag
 			},
 		)
 		diagnostics.Append(ruleDiags...)
+
 		terraformRules = append(terraformRules, ruleValue)
 	}
 
@@ -979,5 +1022,6 @@ func convertStringToTerraformValue(value string) attr.Value {
 	if value == "" {
 		return types.StringNull()
 	}
+
 	return types.StringValue(value)
 }

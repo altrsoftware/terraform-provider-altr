@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package client
 
 import (
@@ -64,7 +67,7 @@ type AccessManagementSnowflakeAccess struct {
 }
 
 type AccessManagementPolicyMaintenance struct {
-	Rate  string `json:"rate,omitempty" tfsdk:"rate"`
+	Rate  string `json:"rate,omitempty"  tfsdk:"rate"`
 	Value string `json:"value,omitempty" tfsdk:"value"`
 }
 
@@ -113,7 +116,7 @@ func (c *Client) CreateAccessManagementSnowflakePolicy(input CreateAccessManagem
 
 // GetAccessManagementSnowflakePolicy retrieves an access management Snowflake policy by ID
 func (c *Client) GetAccessManagementSnowflakePolicy(policyID string) (*AccessManagementSnowflakePolicy, error) {
-	resp, err := c.makeRequest(http.MethodGet, fmt.Sprintf("/unified-policy/management/policy/%s", url.PathEscape(policyID)), nil, "external")
+	resp, err := c.makeRequest(http.MethodGet, "/unified-policy/management/policy/"+url.PathEscape(policyID), nil, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get access management Snowflake policy: %w", err)
 	}
@@ -136,7 +139,7 @@ func (c *Client) GetAccessManagementSnowflakePolicy(policyID string) (*AccessMan
 // UpdateAccessManagementSnowflakePolicy updates an existing access management Snowflake policy
 // NOT SUPPORTED
 func (c *Client) UpdateAccessManagementSnowflakePolicy(policyID string, input UpdateAccessManagementSnowflakePolicyInput) (*AccessManagementSnowflakePolicy, error) {
-	resp, err := c.makeRequest(http.MethodPatch, fmt.Sprintf("/unified-policy/management/access-management/snowflake/%s", url.PathEscape(policyID)), input, "external")
+	resp, err := c.makeRequest(http.MethodPatch, "/unified-policy/management/access-management/snowflake/"+url.PathEscape(policyID), input, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to update access management Snowflake policy: %w", err)
 	}
@@ -151,7 +154,7 @@ func (c *Client) UpdateAccessManagementSnowflakePolicy(policyID string, input Up
 
 // DeleteAccessManagementSnowflakePolicy deletes an access management Snowflake policy
 func (c *Client) DeleteAccessManagementSnowflakePolicy(policyID string) error {
-	resp, err := c.makeRequest(http.MethodDelete, fmt.Sprintf("/unified-policy/management/policy/%s", url.PathEscape(policyID)), nil, "external")
+	resp, err := c.makeRequest(http.MethodDelete, "/unified-policy/management/policy/"+url.PathEscape(policyID), nil, "external")
 	if err != nil {
 		return fmt.Errorf("failed to delete access management Snowflake policy: %w", err)
 	}

@@ -10,9 +10,8 @@ import (
 	"os"
 	"testing"
 
-	"terraform-provider-altr/internal/provider"
-	"terraform-provider-altr/internal/version"
-
+	"github.com/altrsoftware/terraform-provider-altr/internal/provider"
+	"github.com/altrsoftware/terraform-provider-altr/internal/version"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-mux/tf6muxserver"
@@ -55,6 +54,7 @@ func TestGetEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
+
 	return defaultValue
 }
 
@@ -68,10 +68,12 @@ func RandomWithPrefixUnderscoreMaxLength(prefix string, maxLength int) string {
 	if len(prefix) >= maxLength {
 		return prefix[:maxLength]
 	}
+
 	randomSuffix := fmt.Sprintf("_%d", RandInt())
 	if len(prefix)+len(randomSuffix) > maxLength {
 		randomSuffix = randomSuffix[:maxLength-len(prefix)]
 	}
+
 	return fmt.Sprintf("%s%s", prefix, randomSuffix)
 }
 
