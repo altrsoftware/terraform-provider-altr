@@ -1,3 +1,6 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package policy
 
 import (
@@ -29,7 +32,7 @@ type ImpersonationPolicyDataSourceModel struct {
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	RepoName    types.String `tfsdk:"repo_name"`
-	Rules       types.List   `tfsdk:"rules"`
+	Rules       types.List   `tfsdk:"rules"` // List of rules for the impersonation policy
 	CreatedAt   types.String `tfsdk:"created_at"`
 	UpdatedAt   types.String `tfsdk:"updated_at"`
 }

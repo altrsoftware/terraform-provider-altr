@@ -1,16 +1,16 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package policy
 
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/altrsoftware/terraform-provider-altr/internal/client"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -25,14 +25,14 @@ type AccessManagementSnowflakePolicyDataSource struct {
 }
 
 type AccessManagementSnowflakePolicyDataSourceModel struct {
-	ID                types.String `tfsdk:"id"`
-	Name              types.String `tfsdk:"name"`
-	Description       types.String `tfsdk:"description"`
-	ConnectionIDs     types.List   `tfsdk:"connection_ids"`
-	Rules             types.List   `tfsdk:"rules"`
-	PolicyMaintenance types.Object `tfsdk:"policy_maintenance"`
-	CreatedAt         types.String `tfsdk:"created_at"`
-	UpdatedAt         types.String `tfsdk:"updated_at"`
+	ID                types.String                              `tfsdk:"id"`
+	Name              types.String                              `tfsdk:"name"`
+	Description       types.String                              `tfsdk:"description"`
+	ConnectionIds     []int64                                   `tfsdk:"connection_ids"`
+	Rules             types.List                                `tfsdk:"rules"`
+	PolicyMaintenance *client.AccessManagementPolicyMaintenance `tfsdk:"policy_maintenance"`
+	CreatedAt         types.String                              `tfsdk:"created_at"`
+	UpdatedAt         types.String                              `tfsdk:"updated_at"`
 }
 
 func (d *AccessManagementSnowflakePolicyDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -45,13 +45,7 @@ func (d *AccessManagementSnowflakePolicyDataSource) Schema(ctx context.Context, 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Unique identifier for the Snowflake access management policy.",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-zA-Z0-9_-]+$`),
-						"must be a valid policy ID",
-					),
-				},
+				Computed:    true,
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the Snowflake access management policy.",
@@ -66,16 +60,9 @@ func (d *AccessManagementSnowflakePolicyDataSource) Schema(ctx context.Context, 
 				ElementType: types.Int64Type,
 				Computed:    true,
 			},
-			"rules": schema.ListAttribute{
-				Description: "List of rules for the Snowflake access management policy.",
-				ElementType: types.ObjectType{
-					AttrTypes: SnowflakeRuleType.AttrTypes,
-				},
-				Computed: true,
-			},
 			"policy_maintenance": schema.SingleNestedAttribute{
 				Description: "Policy maintenance configuration.",
-				Computed:    true,
+				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					"rate": schema.StringAttribute{
 						Description: "Rate at which the policy maintenance occurs.",
@@ -84,6 +71,133 @@ func (d *AccessManagementSnowflakePolicyDataSource) Schema(ctx context.Context, 
 					"value": schema.StringAttribute{
 						Description: "Value for the policy maintenance rate.",
 						Computed:    true,
+					},
+				},
+			},
+
+			"rules": schema.ListNestedAttribute{
+				Description: "List of rules for the Snowflake access management policy.",
+				Computed:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"actors": schema.ListNestedAttribute{
+							Description: "List of actors for the rule.",
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										Description: "Type of the actor.",
+										Computed:    true,
+									},
+									"condition": schema.StringAttribute{
+										Description: "Condition for the actor (e.g., equals, starts_with, ends_with).",
+										Computed:    true,
+									},
+									"identifiers": schema.ListAttribute{
+										Description: "List of identifiers for the actor.",
+										ElementType: types.StringType,
+										Computed:    true,
+									},
+								},
+							},
+						},
+						"objects": schema.ListNestedAttribute{
+							Description: "List of objects for the rule.",
+							Computed:    true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										Description: "Type of the object (e.g., database, schema, table, view).",
+										Computed:    true,
+									},
+									"condition": schema.StringAttribute{
+										Description: "Condition for the object (e.g., equals, starts_with, ends_with, fully_qualified).",
+										Computed:    true,
+									},
+									"identifiers": schema.ListAttribute{
+										Description: "List of identifiers for the object.",
+										ElementType: types.StringType,
+										Computed:    true,
+									},
+									"fully_qualified_identifiers": schema.ListNestedAttribute{
+										Description: "List of fully qualified object reference.",
+										Computed:    true,
+										NestedObject: schema.NestedAttributeObject{
+											Attributes: map[string]schema.Attribute{
+												"database": schema.StringAttribute{
+													Description: "Database name.",
+													Computed:    true,
+												},
+												"schema": schema.StringAttribute{
+													Description: "Schema name.",
+													Computed:    true,
+												},
+												"table": schema.StringAttribute{
+													Description: "Table name.",
+													Computed:    true,
+												},
+												"view": schema.StringAttribute{
+													Description: "View name.",
+													Computed:    true,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"tagged_objects": schema.ListNestedAttribute{
+							Description: "Tagged objects for the rule.",
+							Computed:    true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"check_against": schema.ListAttribute{
+										Description: "Check against these objects.",
+										ElementType: types.StringType,
+										Computed:    true,
+									},
+									"tagged_with": schema.ListNestedAttribute{
+										Description: "Tagged with these object references.",
+										Computed:    true,
+										NestedObject: schema.NestedAttributeObject{
+											Attributes: map[string]schema.Attribute{
+												"database": schema.StringAttribute{
+													Description: "Database name.",
+													Computed:    true,
+												},
+												"schema": schema.StringAttribute{
+													Description: "Schema name.",
+													Computed:    true,
+												},
+												"name": schema.StringAttribute{
+													Description: "Tag name.",
+													Computed:    true,
+												},
+												"value": schema.StringAttribute{
+													Description: "Tag value.",
+													Computed:    true,
+												},
+											},
+										},
+									},
+									"tag_condition": schema.StringAttribute{
+										Description: "Tag condition for the tagged objects.",
+										Computed:    true,
+									},
+								},
+							},
+						},
+						"access": schema.ListNestedAttribute{
+							Description: "Access for the rule.",
+							Computed:    true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Description: "Name of the access permission.",
+										Computed:    true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
