@@ -144,18 +144,12 @@ func (d *AccessManagementSnowflakePolicyResource) Schema(ctx context.Context, re
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
 				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"description": schema.StringAttribute{
 				Description: "Description of the Snowflake access management policy.",
 				Optional:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
-				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"connection_ids": schema.ListAttribute{
@@ -193,15 +187,11 @@ func (d *AccessManagementSnowflakePolicyResource) Schema(ctx context.Context, re
 					},
 				},
 			},
-
 			"rules": schema.ListNestedAttribute{
 				Description: "List of rules for the Snowflake access management policy.",
 				Required:    true,
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
-				},
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
 				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -647,49 +637,6 @@ func convertAccessManagementSnowflakeActorsFromTerraform(actors types.List) []cl
 	}
 
 	return clientActors
-}
-
-func convertAccessManagementSnowflakeObjectsToTerraform(objects []client.AccessManagementSnowflakeObject) []attr.Value {
-	var terraformObjects []attr.Value
-	for _, object := range objects {
-		var terraformFQIdentifiers []attr.Value
-
-		if len(object.FullyQualifiedIdentifiers) > 0 {
-			for _, fqIdentifier := range object.FullyQualifiedIdentifiers {
-				fqValue, _ := types.ObjectValue(
-					SnowflakeFullyQualifiedIdentifiersType.AttrTypes,
-					map[string]attr.Value{
-						"database": types.StringValue(fqIdentifier.Database),
-						"schema":   types.StringValue(fqIdentifier.Schema),
-						"table":    types.StringValue(fqIdentifier.Table),
-						"view":     types.StringValue(fqIdentifier.View),
-					},
-				)
-				terraformFQIdentifiers = append(terraformFQIdentifiers, fqValue)
-			}
-		}
-
-		// Set `fully_qualified_identifiers` to null if empty
-		var fqIdentifiersList attr.Value
-		if len(terraformFQIdentifiers) == 0 {
-			fqIdentifiersList = types.ListNull(SnowflakeFullyQualifiedIdentifiersType)
-		} else {
-			fqIdentifiersList = types.ListValueMust(SnowflakeFullyQualifiedIdentifiersType, terraformFQIdentifiers)
-		}
-
-		objectValue, _ := types.ObjectValue(
-			SnowflakeObjectType.AttrTypes,
-			map[string]attr.Value{
-				"type":                        types.StringValue(object.Type),
-				"condition":                   types.StringValue(object.Condition),
-				"identifiers":                 convertStringListToTerraform(object.Identifiers),
-				"fully_qualified_identifiers": fqIdentifiersList,
-			},
-		)
-		terraformObjects = append(terraformObjects, objectValue)
-	}
-
-	return terraformObjects
 }
 
 func convertAccessManagementSnowflakeObjectsFromTerraform(objects types.List) []client.AccessManagementSnowflakeObject {

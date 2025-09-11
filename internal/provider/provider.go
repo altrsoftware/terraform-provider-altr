@@ -152,6 +152,9 @@ func (p *SidecarProvider) DataSources(ctx context.Context) []func() datasource.D
 		repo.NewRepoDataSource,
 		repo.NewRepoUserDataSource,
 		repo.NewRepoSidecarBindingDataSource,
+		policy.NewAccessManagementOLTPPolicyDataSource,
+		policy.NewAccessManagementSnowflakePolicyDataSource,
+		policy.NewImpersonationPolicyDataSource,
 	}
 }
 

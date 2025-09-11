@@ -137,9 +137,8 @@ func (c *Client) GetAccessManagementSnowflakePolicy(policyID string) (*AccessMan
 }
 
 // UpdateAccessManagementSnowflakePolicy updates an existing access management Snowflake policy
-// NOT SUPPORTED
 func (c *Client) UpdateAccessManagementSnowflakePolicy(policyID string, input UpdateAccessManagementSnowflakePolicyInput) (*AccessManagementSnowflakePolicy, error) {
-	resp, err := c.makeRequest(http.MethodPatch, "/unified-policy/management/access-management/snowflake/"+url.PathEscape(policyID), input, "external")
+	resp, err := c.makeRequest(http.MethodPut, "/unified-policy/management/access-management/snowflake/"+url.PathEscape(policyID), input, "external")
 	if err != nil {
 		return nil, fmt.Errorf("failed to update access management Snowflake policy: %w", err)
 	}
