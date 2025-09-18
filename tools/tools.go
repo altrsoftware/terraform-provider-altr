@@ -8,7 +8,7 @@ import (
 )
 
 // Generate copyright headers
-//go:generate go run github.com/hashicorp/copywrite headers -d .. --config ../.copywrite.hcl
+//go:generate go run github.com/hashicorp/copywrite@v0.22.0 headers -d .. --config ../.copywrite.hcl
 
 // Format Terraform code for use in documentation.
 // If you do not have Terraform installed, you can remove the formatting command, but it is suggested
@@ -16,4 +16,4 @@ import (
 //go:generate terraform fmt -recursive ../examples/
 
 // Generate documentation.
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-dir .. -provider-name altr
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@v0.22.0 generate --provider-dir .. -provider-name altr

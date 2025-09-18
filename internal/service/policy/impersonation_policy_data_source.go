@@ -1,0 +1,191 @@
+// Copyright (c) ALTR Solutions, Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+package policy
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+
+	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+var _ datasource.DataSource = &ImpersonationPolicyDataSource{}
+
+func NewImpersonationPolicyDataSource() datasource.DataSource {
+	return &ImpersonationPolicyDataSource{}
+}
+
+type ImpersonationPolicyDataSource struct {
+	client *client.Client
+}
+
+type ImpersonationPolicyDataSourceModel struct {
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	RepoName    types.String `tfsdk:"repo_name"`
+	Rules       types.List   `tfsdk:"rules"` // List of rules for the impersonation policy
+	CreatedAt   types.String `tfsdk:"created_at"`
+	UpdatedAt   types.String `tfsdk:"updated_at"`
+}
+
+func (d *ImpersonationPolicyDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_impersonation_policy"
+}
+
+func (d *ImpersonationPolicyDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Description: "Data source for retrieving an impersonation policy.",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "Unique identifier for the impersonation policy.",
+				Required:    true,
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-zA-Z0-9_-]+$`),
+						"must be a valid policy ID",
+					),
+				},
+			},
+			"name": schema.StringAttribute{
+				Description: "Name of the impersonation policy.",
+				Computed:    true,
+			},
+			"description": schema.StringAttribute{
+				Description: "Description of the impersonation policy.",
+				Computed:    true,
+			},
+			"repo_name": schema.StringAttribute{
+				Description: "The name of the repository where the impersonation policy is defined.",
+				Computed:    true,
+			},
+			"rules": schema.ListNestedAttribute{
+				Description: "List of rules for the impersonation policy.",
+				Computed:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"actors": schema.ListNestedAttribute{
+							Description: "List of actors for the rule.",
+							Computed:    true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										Description: "Type of the actor (e.g., idp_user, idp_group).",
+										Computed:    true,
+									},
+									"identifiers": schema.ListAttribute{
+										Description: "List of user or group identifiers.",
+										ElementType: types.StringType,
+										Computed:    true,
+									},
+									"condition": schema.StringAttribute{
+										Description: "Condition for the actor (e.g., equals).",
+										Computed:    true,
+									},
+								},
+							},
+						},
+						"targets": schema.ListNestedAttribute{
+							Description: "List of target users or groups.",
+							Computed:    true,
+							NestedObject: schema.NestedAttributeObject{
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										Description: "Type of the target (e.g., repo_user).",
+										Computed:    true,
+									},
+									"identifiers": schema.ListAttribute{
+										Description: "List of target identifiers.",
+										ElementType: types.StringType,
+										Computed:    true,
+									},
+									"condition": schema.StringAttribute{
+										Description: "Condition for the target (e.g., equals).",
+										Computed:    true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"created_at": schema.StringAttribute{
+				Description: "Creation timestamp.",
+				Computed:    true,
+			},
+			"updated_at": schema.StringAttribute{
+				Description: "Last update timestamp.",
+				Computed:    true,
+			},
+		},
+	}
+}
+
+func (d *ImpersonationPolicyDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(*client.Client)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *client.Client, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+		return
+	}
+
+	d.client = client
+}
+
+func (d *ImpersonationPolicyDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config ImpersonationPolicyDataSourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Get the impersonation policy from the API
+	policy, err := d.client.GetImpersonationPolicy(config.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading impersonation policy",
+			fmt.Sprintf("Could not read impersonation policy with ID %s: %s", config.ID.ValueString(), err.Error()),
+		)
+		return
+	}
+
+	// If the policy doesn't exist, return an error
+	if policy == nil {
+		resp.Diagnostics.AddError(
+			"Impersonation policy not found",
+			fmt.Sprintf("Impersonation policy with ID '%s' does not exist.", config.ID.ValueString()),
+		)
+		return
+	}
+
+	// Map response to the model
+	d.mapPolicyToModel(policy, &config)
+
+	// Set state
+	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
+}
+
+// Helper function to map API response to Terraform model
+func (d *ImpersonationPolicyDataSource) mapPolicyToModel(policy *client.ImpersonationPolicy, model *ImpersonationPolicyDataSourceModel) {
+	model.ID = types.StringValue(policy.ID)
+	model.Name = types.StringValue(policy.Name)
+	model.Description = types.StringValue(policy.Description)
+	model.RepoName = types.StringValue(policy.RepoName)
+	model.Rules = convertRulesToTerraform(policy.Rules)
+	model.CreatedAt = types.StringValue(policy.CreatedAt)
+	model.UpdatedAt = types.StringValue(policy.UpdatedAt)
+}

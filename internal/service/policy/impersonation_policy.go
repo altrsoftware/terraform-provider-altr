@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -65,9 +64,6 @@ func (r *ImpersonationPolicyResource) Schema(ctx context.Context, req resource.S
 			"name": schema.StringAttribute{
 				Description: "Name of the impersonation policy.",
 				Required:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
 				},
@@ -75,9 +71,6 @@ func (r *ImpersonationPolicyResource) Schema(ctx context.Context, req resource.S
 			"description": schema.StringAttribute{
 				Description: "Description of the impersonation policy.",
 				Optional:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 255),
 				},
@@ -95,9 +88,6 @@ func (r *ImpersonationPolicyResource) Schema(ctx context.Context, req resource.S
 			"rules": schema.ListNestedAttribute{
 				Description: "List of rules for the impersonation policy.",
 				Required:    true,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
-				},
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
