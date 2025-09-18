@@ -81,6 +81,7 @@ func (d *AccessManagementSnowflakePolicyDataSource) Schema(ctx context.Context, 
 					Attributes: map[string]schema.Attribute{
 						"actors": schema.ListNestedAttribute{
 							Description: "List of actors for the rule.",
+							Computed:    true,
 							NestedObject: schema.NestedAttributeObject{
 								Attributes: map[string]schema.Attribute{
 									"type": schema.StringAttribute{
