@@ -44,7 +44,7 @@ func (d *AccessManagementSnowflakePolicyDataSource) Schema(ctx context.Context, 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Unique identifier for the Snowflake access management policy.",
-				Computed:    true,
+				Required:    true,
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the Snowflake access management policy.",
@@ -61,7 +61,7 @@ func (d *AccessManagementSnowflakePolicyDataSource) Schema(ctx context.Context, 
 			},
 			"policy_maintenance": schema.SingleNestedAttribute{
 				Description: "Policy maintenance configuration.",
-				Optional:    true,
+				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"rate": schema.StringAttribute{
 						Description: "Rate at which the policy maintenance occurs.",
