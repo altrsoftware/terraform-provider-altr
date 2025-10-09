@@ -104,6 +104,14 @@ func handleAPIResponse(resp *http.Response, v interface{}) error {
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		resBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("error reading response body: %w", err)
+		}
+		fmt.Printf("API Response Body Raw: %s\n", string(resBytes)) // Debugging line to print the response body
+
+		// Reset resp.Body so it can be read again by json.NewDecoder below
+		resp.Body = io.NopCloser(bytes.NewBuffer(resBytes))
 		if v != nil {
 			return json.NewDecoder(resp.Body).Decode(v)
 		}

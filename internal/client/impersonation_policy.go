@@ -102,12 +102,24 @@ func (c *Client) UpdateImpersonationPolicy(policyID string, input UpdateImperson
 		return nil, fmt.Errorf("failed to update impersonation policy: %w", err)
 	}
 
-	var policy ImpersonationPolicy
-	if err := handleAPIResponse(resp, &policy); err != nil {
+	var response struct {
+		Data struct {
+			Policy   ImpersonationPolicy `json:"policy"`
+			PolicyID string              `json:"policy_id"`
+		} `json:"data"`
+	}
+
+	// var policy ImpersonationPolicy
+	if err := handleAPIResponse(resp, &response); err != nil {
 		return nil, fmt.Errorf("failed to update impersonation policy: %w", err)
 	}
 
-	return &policy, nil
+	// We need to set this because the API doesn't return it in the policy object
+	response.Data.Policy.ID = response.Data.PolicyID
+
+	fmt.Printf("UpdateImpersonationPolicy API response policy: %+v\n", response) // Debugging line to print the updated policy
+
+	return &response.Data.Policy, nil
 }
 
 // DeleteImpersonationPolicy deletes an impersonation policy

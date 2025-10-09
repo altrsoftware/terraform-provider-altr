@@ -3,6 +3,8 @@
 
 package client
 
+import "encoding/json"
+
 // Sidecar structures
 type Sidecar struct {
 	ID                       string     `json:"id"`
@@ -131,4 +133,9 @@ type GetRepoBindOutput struct {
 type ListBindingsOutput struct {
 	RepoBindings []RepoSidecarBinding `json:"repo_bindings"`
 	ContiguousID string               `json:"contiguous_id"`
+}
+
+type APIResponse struct {
+	Success bool            `json:"success"`
+	Data    json.RawMessage `json:"data,omitempty"`
 }

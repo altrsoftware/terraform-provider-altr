@@ -82,6 +82,47 @@ func TestAccImpersonationPolicyResource_disappears(t *testing.T) {
 	})
 }
 
+func TestAccImpersonationPolicyResource_updateActors(t *testing.T) {
+	resourceName := "altr_impersonation_policy.test"
+	policyName := acctest.RandomWithPrefixUnderscoreMaxLength("impersonation_policy", 32)
+	repoName := acctest.RandomWithPrefixUnderscoreMaxLength("repo", 32)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckImpersonationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basic(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+				),
+			},
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basicTwoActors(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckImpersonationPolicyExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -198,6 +239,35 @@ resource "altr_impersonation_policy" "test" {
 `, policyName, repoName)
 }
 
+func testAccImpersonationPolicyResourceConfig_basicTwoActors(policyName, repoName string) string {
+	return fmt.Sprintf(`
+resource "altr_impersonation_policy" "test" {
+  name        = %[1]q
+  description = "Test impersonation policy"
+  repo_name   = %[2]q
+
+  rules = [
+    {
+      actors = [
+        {
+          type        = "idp_user"
+          identifiers = ["user1@example.com", "user2@example.com"]
+          condition   = "equals"
+        }
+      ]
+      targets = [
+        {
+          type        = "repo_user"
+          identifiers = ["target_user"]
+          condition   = "equals"
+        }
+      ]
+    }
+  ]
+}
+`, policyName, repoName)
+}
+
 func testAccImpersonationPolicyResourceConfig_invalidRules(policyName, repoName string) string {
 	return fmt.Sprintf(`
 resource "altr_impersonation_policy" "test" {
@@ -225,4 +295,39 @@ resource "altr_impersonation_policy" "test" {
   ]
 }
 `, policyName, repoName)
+}
+
+func testAccCheckImpersonationPolicy_updateActors(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("Not found: %s", resourceName)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No Impersonation Policy ID is set")
+		}
+
+		// Create a new client for testing
+		conn, err := client.NewClient(
+			"52f415a4-de37-498b-a38f-c0a3b474730e",
+			"ALTR-AB5C87D832F84A95BEA9F2DC14202A5A",
+			"c366815e615df0f3500316295f4d0550b1dcf9b3f659a9f2a3545994c946ba24",
+			"https://52f415a4-de37-498b-a38f-c0a3b474730e.altrnet-trunnion1.568950776381.sandbox.ct.dev.altr.com",
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create test client: %w", err)
+		}
+
+		policy, err := conn.GetImpersonationPolicy(rs.Primary.ID)
+		if err != nil {
+			return err
+		}
+
+		if policy == nil {
+			return fmt.Errorf("Impersonation Policy not found")
+		}
+
+		return nil
+	}
 }
