@@ -416,38 +416,3 @@ resource "altr_impersonation_policy" "test" {
 }
 `, policyName, repoName)
 }
-
-func testAccCheckImpersonationPolicy_updateActors(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("No Impersonation Policy ID is set")
-		}
-
-		// Create a new client for testing
-		conn, err := client.NewClient(
-			"52f415a4-de37-498b-a38f-c0a3b474730e",
-			"ALTR-AB5C87D832F84A95BEA9F2DC14202A5A",
-			"c366815e615df0f3500316295f4d0550b1dcf9b3f659a9f2a3545994c946ba24",
-			"https://52f415a4-de37-498b-a38f-c0a3b474730e.altrnet-trunnion1.568950776381.sandbox.ct.dev.altr.com",
-		)
-		if err != nil {
-			return fmt.Errorf("failed to create test client: %w", err)
-		}
-
-		policy, err := conn.GetImpersonationPolicy(rs.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		if policy == nil {
-			return fmt.Errorf("Impersonation Policy not found")
-		}
-
-		return nil
-	}
-}
