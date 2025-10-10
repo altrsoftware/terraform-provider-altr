@@ -108,7 +108,6 @@ func handleAPIResponse(resp *http.Response, v interface{}) error {
 		if err != nil {
 			return fmt.Errorf("error reading response body: %w", err)
 		}
-		fmt.Printf("API Response Body Raw: %s\n", string(resBytes)) // Debugging line to print the response body
 
 		// Reset resp.Body so it can be read again by json.NewDecoder below
 		resp.Body = io.NopCloser(bytes.NewBuffer(resBytes))

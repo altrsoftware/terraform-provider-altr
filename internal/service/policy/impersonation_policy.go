@@ -277,16 +277,12 @@ func (r *ImpersonationPolicyResource) Update(ctx context.Context, req resource.U
 	// Convert rules from Terraform model to client model
 	rules := convertRulesFromTerraform(plan.Rules)
 
-	fmt.Printf("UpdateImpersonationPolicy plan rules: %+v\n", rules)
-
 	// Create the input for the API call
 	input := client.UpdateImpersonationPolicyInput{
 		Name:        plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
 		Rules:       rules,
 	}
-
-	fmt.Printf("UpdateImpersonationPolicy input: %+v\n", input)
 
 	// Call the API to update the impersonation policy
 	policy, err := r.client.UpdateImpersonationPolicy(state.ID.ValueString(), input)
@@ -299,12 +295,8 @@ func (r *ImpersonationPolicyResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	fmt.Printf("UpdateImpersonationPolicy response policy: %+v\n", policy)
-
 	// Map response to the model
 	r.mapPolicyToModel(policy, &plan)
-
-	fmt.Printf("UpdateImpersonationPolicy plan after mapping: %+v\n", plan)
 
 	// Set state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
