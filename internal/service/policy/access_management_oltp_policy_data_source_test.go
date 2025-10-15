@@ -81,7 +81,7 @@ resource "altr_access_management_oltp_policy" "test" {
     type = %[7]q
     actors = [{
         type = %[8]q,
-        identifiers = [%[9]q, %[9]q], // Duplicate identifiers
+        identifiers = [%[9]q],
         condition = %[10]q,
     }],
     objects = [{

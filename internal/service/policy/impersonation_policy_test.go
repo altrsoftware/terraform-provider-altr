@@ -82,6 +82,133 @@ func TestAccImpersonationPolicyResource_disappears(t *testing.T) {
 	})
 }
 
+func TestAccImpersonationPolicyResource_updateActors(t *testing.T) {
+	resourceName := "altr_impersonation_policy.test"
+	policyName := acctest.RandomWithPrefixUnderscoreMaxLength("impersonation_policy", 32)
+	repoName := acctest.RandomWithPrefixUnderscoreMaxLength("repo", 32)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckImpersonationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basic(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+				),
+			},
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basicTwoActors(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccImpersonationPolicyResource_updateDescriptionAddTargets(t *testing.T) {
+	resourceName := "altr_impersonation_policy.test"
+	policyName := acctest.RandomWithPrefixUnderscoreMaxLength("impersonation_policy", 32)
+	repoName := acctest.RandomWithPrefixUnderscoreMaxLength("repo", 32)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckImpersonationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basic(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+				),
+			},
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basicNewTargetsAndDesc(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccImpersonationPolicyResource_updateDescriptionRemoveActorsTargets(t *testing.T) {
+	resourceName := "altr_impersonation_policy.test"
+	policyName := acctest.RandomWithPrefixUnderscoreMaxLength("impersonation_policy", 32)
+	repoName := acctest.RandomWithPrefixUnderscoreMaxLength("repo", 32)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckImpersonationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basicNewTargetsAndDesc(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+					resource.TestCheckResourceAttr(resourceName, "rules.0.actors.0.identifiers.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "rules.0.targets.#", "2"),
+				),
+			},
+			{
+				Config: testAccImpersonationPolicyResourceConfig_basic(policyName, repoName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckImpersonationPolicyExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "name", policyName),
+					resource.TestCheckResourceAttr(resourceName, "repo_name", repoName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
+					resource.TestCheckResourceAttr(resourceName, "rules.0.actors.0.identifiers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "rules.0.targets.#", "1"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func testAccCheckImpersonationPolicyExists(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -189,6 +316,69 @@ resource "altr_impersonation_policy" "test" {
         {
           type        = "repo_user"
           identifiers = ["target_user"]
+          condition   = "equals"
+        }
+      ]
+    }
+  ]
+}
+`, policyName, repoName)
+}
+
+func testAccImpersonationPolicyResourceConfig_basicTwoActors(policyName, repoName string) string {
+	return fmt.Sprintf(`
+resource "altr_impersonation_policy" "test" {
+  name        = %[1]q
+  description = "Test impersonation policy"
+  repo_name   = %[2]q
+
+  rules = [
+    {
+      actors = [
+        {
+          type        = "idp_user"
+          identifiers = ["user1@example.com", "user2@example.com"]
+          condition   = "equals"
+        }
+      ]
+      targets = [
+        {
+          type        = "repo_user"
+          identifiers = ["target_user"]
+          condition   = "equals"
+        }
+      ]
+    }
+  ]
+}
+`, policyName, repoName)
+}
+
+func testAccImpersonationPolicyResourceConfig_basicNewTargetsAndDesc(policyName, repoName string) string {
+	return fmt.Sprintf(`
+resource "altr_impersonation_policy" "test" {
+  name        = %[1]q
+  description = "Updated description"
+  repo_name   = %[2]q
+
+  rules = [
+    {
+      actors = [
+        {
+          type        = "idp_user"
+          identifiers = ["user1@example.com", "user2@example.com"]
+          condition   = "equals"
+        }
+      ]
+      targets = [
+        {
+          type        = "repo_user"
+          identifiers = ["target_user"]
+          condition   = "equals"
+        },
+        {
+          type        = "repo_user"
+          identifiers = ["target_user2"]
           condition   = "equals"
         }
       ]

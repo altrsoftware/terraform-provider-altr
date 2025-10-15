@@ -546,58 +546,6 @@ resource "altr_repo_sidecar_binding" "test" {
 `, sidecarName, sidecarHostname, sidecarPubKey1, repoName, repoType, repoHostname, repoPort, listenerPort, listenerDatabaseType, listenerAdvertisedVersion)
 }
 
-func testAccCheckSidecarDisappears(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
-		}
-
-		// Create a new client for testing
-		conn, err := client.NewClient(
-			acctest.TestGetEnv("ALTR_ORG_ID", "test-org"),
-			acctest.TestGetEnv("ALTR_API_KEY", "test-key"),
-			acctest.TestGetEnv("ALTR_SECRET", "test-secret"),
-			acctest.TestGetEnv("ALTR_BASE_URL", ""),
-		)
-		if err != nil {
-			return fmt.Errorf("failed to create test client: %w", err)
-		}
-
-		return conn.DeleteSidecar(rs.Primary.ID)
-	}
-}
-
-func testAccCheckSidecarListenerDisappears(resourceName string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
-		}
-
-		// Parse the ID to get sidecar_id and port
-		sidecarID := rs.Primary.Attributes["sidecar_id"]
-		portStr := rs.Primary.Attributes["port"]
-		port, err := strconv.Atoi(portStr)
-		if err != nil {
-			return fmt.Errorf("Invalid port in state: %s", portStr)
-		}
-
-		// Create a new client for testing
-		conn, err := client.NewClient(
-			acctest.TestGetEnv("ALTR_ORG_ID", "test-org"),
-			acctest.TestGetEnv("ALTR_API_KEY", "test-key"),
-			acctest.TestGetEnv("ALTR_SECRET", "test-secret"),
-			acctest.TestGetEnv("ALTR_BASE_URL", ""),
-		)
-		if err != nil {
-			return fmt.Errorf("failed to create test client: %w", err)
-		}
-
-		return conn.DeregisterSidecarListener(sidecarID, port)
-	}
-}
-
 var pubKeyExample1 = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp/TpUtMCmMLzQ+vTzuel
 XudSzqzsgjEj7dWrpNgY+fwo8r6oVx19pDbeNATlCMrmQM942aGmL2kdBhhPrZuC
@@ -608,6 +556,7 @@ RF5rhiJNZR6dwdftOeHzoQiLHL4r/VsJ7PpMycjdtaVgPnv30JMnkAQTP6m9c+/H
 +wIDAQAB
 -----END PUBLIC KEY-----`
 
+// nolint: unused
 var pubKeyExample2 = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzEyEtWdjYF8AnUnbrczr
 FZBarvdu/urMLvGQ6x9D6+AN8RrdHj5GV5+Bp17MHaceZTLlvra1x2LSaXlQhnro

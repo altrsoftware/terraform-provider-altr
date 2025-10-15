@@ -49,7 +49,7 @@ func (d *ImpersonationPolicyDataSource) Schema(ctx context.Context, req datasour
 				Required:    true,
 				Validators: []validator.String{
 					stringvalidator.RegexMatches(
-						regexp.MustCompile(`^[a-zA-Z0-9_-]+$`),
+						regexp.MustCompile(`^[a-zA-Z0-9_#-]+$`),
 						"must be a valid policy ID",
 					),
 				},

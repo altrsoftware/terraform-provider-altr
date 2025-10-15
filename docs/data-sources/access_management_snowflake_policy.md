@@ -35,7 +35,7 @@ data "altr_access_management_snowflake_policy" "example" {
 - `description` (String) Description of the Snowflake access management policy.
 - `name` (String) Name of the Snowflake access management policy.
 - `policy_maintenance` (Attributes) Policy maintenance configuration. (see [below for nested schema](#nestedatt--policy_maintenance))
-- `rules` (List of Object) List of rules for the Snowflake access management policy. (see [below for nested schema](#nestedatt--rules))
+- `rules` (Attributes List) List of rules for the Snowflake access management policy. (see [below for nested schema](#nestedatt--rules))
 - `updated_at` (String) Last update timestamp.
 
 <a id="nestedatt--policy_maintenance"></a>
@@ -52,66 +52,66 @@ Read-Only:
 
 Read-Only:
 
-- `access` (List of Object) (see [below for nested schema](#nestedobjatt--rules--access))
-- `actors` (List of Object) (see [below for nested schema](#nestedobjatt--rules--actors))
-- `objects` (List of Object) (see [below for nested schema](#nestedobjatt--rules--objects))
-- `tagged_objects` (List of Object) (see [below for nested schema](#nestedobjatt--rules--tagged_objects))
+- `access` (Attributes List) Access for the rule. (see [below for nested schema](#nestedatt--rules--access))
+- `actors` (Attributes List) List of actors for the rule. (see [below for nested schema](#nestedatt--rules--actors))
+- `objects` (Attributes List) List of objects for the rule. (see [below for nested schema](#nestedatt--rules--objects))
+- `tagged_objects` (Attributes List) Tagged objects for the rule. (see [below for nested schema](#nestedatt--rules--tagged_objects))
 
-<a id="nestedobjatt--rules--access"></a>
+<a id="nestedatt--rules--access"></a>
 ### Nested Schema for `rules.access`
 
 Read-Only:
 
-- `name` (String)
+- `name` (String) Name of the access permission.
 
 
-<a id="nestedobjatt--rules--actors"></a>
+<a id="nestedatt--rules--actors"></a>
 ### Nested Schema for `rules.actors`
 
 Read-Only:
 
-- `condition` (String)
-- `identifiers` (List of String)
-- `type` (String)
+- `condition` (String) Condition for the actor (e.g., equals, starts_with, ends_with).
+- `identifiers` (List of String) List of identifiers for the actor.
+- `type` (String) Type of the actor.
 
 
-<a id="nestedobjatt--rules--objects"></a>
+<a id="nestedatt--rules--objects"></a>
 ### Nested Schema for `rules.objects`
 
 Read-Only:
 
-- `condition` (String)
-- `fully_qualified_identifiers` (List of Object) (see [below for nested schema](#nestedobjatt--rules--objects--fully_qualified_identifiers))
-- `identifiers` (List of String)
-- `type` (String)
+- `condition` (String) Condition for the object (e.g., equals, starts_with, ends_with, fully_qualified).
+- `fully_qualified_identifiers` (Attributes List) List of fully qualified object reference. (see [below for nested schema](#nestedatt--rules--objects--fully_qualified_identifiers))
+- `identifiers` (List of String) List of identifiers for the object.
+- `type` (String) Type of the object (e.g., database, schema, table, view).
 
-<a id="nestedobjatt--rules--objects--fully_qualified_identifiers"></a>
+<a id="nestedatt--rules--objects--fully_qualified_identifiers"></a>
 ### Nested Schema for `rules.objects.fully_qualified_identifiers`
 
 Read-Only:
 
-- `database` (String)
-- `schema` (String)
-- `table` (String)
-- `view` (String)
+- `database` (String) Database name.
+- `schema` (String) Schema name.
+- `table` (String) Table name.
+- `view` (String) View name.
 
 
 
-<a id="nestedobjatt--rules--tagged_objects"></a>
+<a id="nestedatt--rules--tagged_objects"></a>
 ### Nested Schema for `rules.tagged_objects`
 
 Read-Only:
 
-- `check_against` (List of String)
-- `tag_condition` (String)
-- `tagged_with` (List of Object) (see [below for nested schema](#nestedobjatt--rules--tagged_objects--tagged_with))
+- `check_against` (List of String) Check against these objects.
+- `tag_condition` (String) Tag condition for the tagged objects.
+- `tagged_with` (Attributes List) Tagged with these object references. (see [below for nested schema](#nestedatt--rules--tagged_objects--tagged_with))
 
-<a id="nestedobjatt--rules--tagged_objects--tagged_with"></a>
+<a id="nestedatt--rules--tagged_objects--tagged_with"></a>
 ### Nested Schema for `rules.tagged_objects.tagged_with`
 
 Read-Only:
 
-- `database` (String)
-- `name` (String)
-- `schema` (String)
-- `value` (String)
+- `database` (String) Database name.
+- `name` (String) Tag name.
+- `schema` (String) Schema name.
+- `value` (String) Tag value.
