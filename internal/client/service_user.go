@@ -11,6 +11,9 @@ import (
 
 // CreateServiceUser creates a new service user for a repository
 func (c *Client) CreateServiceUser(repoName string, input CreateServiceUserInput) (*ServiceUser, error) {
+	// The API requires the repo identifier in the body as well as the path.
+	input.Resource = repoName
+
 	resp, err := c.makeRequest(http.MethodPost, fmt.Sprintf("/repos/%s/serviceusers", url.PathEscape(repoName)), input, "sidecar")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create service user: %w", err)
@@ -45,6 +48,9 @@ func (c *Client) GetServiceUser(repoName, username string) (*ServiceUser, error)
 
 // UpdateServiceUser updates an existing service user
 func (c *Client) UpdateServiceUser(repoName, username string, input UpdateServiceUserInput) (*ServiceUser, error) {
+	// The API requires the repo identifier in the body as well as the path.
+	input.Resource = repoName
+
 	resp, err := c.makeRequest(http.MethodPatch, fmt.Sprintf("/repos/%s/serviceusers/%s", url.PathEscape(repoName), url.PathEscape(username)), input, "sidecar")
 	if err != nil {
 		return nil, fmt.Errorf("failed to update service user: %w", err)

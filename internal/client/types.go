@@ -244,6 +244,7 @@ type ServiceUser struct {
 
 type CreateServiceUserInput struct {
 	Username            string               `json:"username"`
+	Resource            string               `json:"resource"`
 	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
 	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
 	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`
@@ -251,6 +252,7 @@ type CreateServiceUserInput struct {
 }
 
 type UpdateServiceUserInput struct {
+	Resource            string               `json:"resource"`
 	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
 	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
 	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`

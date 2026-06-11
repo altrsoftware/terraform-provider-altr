@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -122,18 +123,22 @@ func (r *AgentTaskResource) Schema(ctx context.Context, req resource.SchemaReque
 				Description: "CLASSIFIER task configuration.",
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
-					"collection_name": schema.StringAttribute{
-						Description: "Name of the classifier collection to use.",
-						Optional:    true,
-						Computed:    true,
-					},
 					"classification_type": schema.Int64Attribute{
-						Description: "Classification type identifier to apply during the scan.",
-						Optional:    true,
-						Computed:    true,
+						Description: "Classification engine to use: 1 (GOOGLE_DLP), 2 (SNOWFLAKE_NATIVE), 3 (SNOWFLAKE_OBJECT_TAG_IMPORT), 4 (SNOWFLAKE_NATIVE_AND_TAG_IMPORT), or 5 (ALTR_NATIVE).",
+						Required:    true,
+						Validators: []validator.Int64{
+							int64validator.OneOf(1, 2, 3, 4, 5),
+						},
 					},
 					"sample_strategy": schema.StringAttribute{
-						Description: "Sampling strategy used when collecting data for classification.",
+						Description: "Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).",
+						Required:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("ROWS", "METADATA", "COMBINED"),
+						},
+					},
+					"collection_name": schema.StringAttribute{
+						Description: "Name of the classifier collection to use. May only be set when classification_type is 5 (ALTR_NATIVE).",
 						Optional:    true,
 						Computed:    true,
 					},
@@ -239,6 +244,12 @@ func (r *AgentTaskResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
+	if err := r.validateConfiguration(&plan); err != nil {
+		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
+
+		return
+	}
+
 	input := client.CreateAgentTaskInput{
 		Name:          plan.Name.ValueString(),
 		Description:   plan.Description.ValueString(),
@@ -303,6 +314,12 @@ func (r *AgentTaskResource) Update(ctx context.Context, req resource.UpdateReque
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if err := r.validateConfiguration(&plan); err != nil {
+		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
+
 		return
 	}
 
@@ -381,6 +398,25 @@ func (r *AgentTaskResource) ImportState(ctx context.Context, req resource.Import
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("agent_id"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+}
+
+// collectionNameClassificationType is the only classification_type
+// (ALTR_NATIVE) for which the API accepts a collection_name.
+const collectionNameClassificationType = 5
+
+func (r *AgentTaskResource) validateConfiguration(model *AgentTaskResourceModel) error {
+	attrs := model.Configuration.Attributes()
+
+	collectionName := attrs["collection_name"].(types.String)
+	hasCollection := !collectionName.IsNull() && !collectionName.IsUnknown() && collectionName.ValueString() != ""
+
+	classificationType := attrs["classification_type"].(types.Int64)
+
+	if hasCollection && (classificationType.IsNull() || classificationType.ValueInt64() != collectionNameClassificationType) {
+		return fmt.Errorf("'collection_name' may only be set when 'classification_type' is %d (ALTR_NATIVE)", collectionNameClassificationType)
+	}
+
+	return nil
 }
 
 func (r *AgentTaskResource) configFromModel(obj basetypes.ObjectValue) client.AgentTaskConfiguration {

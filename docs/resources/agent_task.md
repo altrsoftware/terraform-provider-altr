@@ -46,7 +46,9 @@ resource "altr_agent_task" "example" {
   service_user = altr_service_user.example.username
 
   configuration = {
-    collection_name = "default"
+    classification_type = 5
+    sample_strategy     = "COMBINED"
+    collection_name     = "default"
   }
 
   schedule = {
@@ -82,11 +84,14 @@ resource "altr_agent_task" "example" {
 <a id="nestedatt--configuration"></a>
 ### Nested Schema for `configuration`
 
+Required:
+
+- `classification_type` (Number) Classification engine to use: 1 (GOOGLE_DLP), 2 (SNOWFLAKE_NATIVE), 3 (SNOWFLAKE_OBJECT_TAG_IMPORT), 4 (SNOWFLAKE_NATIVE_AND_TAG_IMPORT), or 5 (ALTR_NATIVE).
+- `sample_strategy` (String) Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).
+
 Optional:
 
-- `classification_type` (Number) Classification type identifier to apply during the scan.
-- `collection_name` (String) Name of the classifier collection to use.
-- `sample_strategy` (String) Sampling strategy used when collecting data for classification.
+- `collection_name` (String) Name of the classifier collection to use. May only be set when classification_type is 5 (ALTR_NATIVE).
 - `ssl_config` (Attributes) SSL/TLS configuration used when connecting to the repository. (see [below for nested schema](#nestedatt--configuration--ssl_config))
 
 <a id="nestedatt--configuration--ssl_config"></a>

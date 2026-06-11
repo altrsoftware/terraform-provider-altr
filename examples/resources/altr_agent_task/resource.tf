@@ -31,7 +31,9 @@ resource "altr_agent_task" "example" {
   service_user = altr_service_user.example.username
 
   configuration = {
-    collection_name = "default"
+    classification_type = 5
+    sample_strategy     = "ROWS"
+    collection_name     = "default"
   }
 
   schedule = {

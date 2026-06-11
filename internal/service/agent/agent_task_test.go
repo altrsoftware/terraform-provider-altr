@@ -32,6 +32,8 @@ func TestAccAgentTaskResource_basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(resourceName, "agent_id", agentResourceName, "id"),
 					resource.TestCheckResourceAttrPair(resourceName, "repo_name", repoResourceName, "name"),
 					resource.TestCheckResourceAttr(resourceName, "name", prefix+"_task"),
+					resource.TestCheckResourceAttr(resourceName, "configuration.classification_type", "5"),
+					resource.TestCheckResourceAttr(resourceName, "configuration.sample_strategy", "ROWS"),
 					resource.TestCheckResourceAttr(resourceName, "configuration.collection_name", "default"),
 					resource.TestCheckResourceAttr(resourceName, "schedule.type", "CRON"),
 					resource.TestCheckResourceAttr(resourceName, "schedule.value", "0 0 * * *"),
@@ -240,7 +242,9 @@ resource "altr_agent_task" "test" {
   service_user = altr_service_user.test.username
 
   configuration = {
-    collection_name = "default"
+    classification_type = 5
+    sample_strategy     = "ROWS"
+    collection_name     = "default"
   }
 
   schedule = {
@@ -261,7 +265,9 @@ resource "altr_agent_task" "test" {
   service_user = altr_service_user.test.username
 
   configuration = {
-    collection_name = "default"
+    classification_type = 5
+    sample_strategy     = "ROWS"
+    collection_name     = "default"
   }
 
   schedule = {
