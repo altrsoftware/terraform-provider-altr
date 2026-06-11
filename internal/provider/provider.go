@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/altrsoftware/terraform-provider-altr/internal/client"
+	"github.com/altrsoftware/terraform-provider-altr/internal/service/agent"
 	"github.com/altrsoftware/terraform-provider-altr/internal/service/policy"
 	"github.com/altrsoftware/terraform-provider-altr/internal/service/repo"
 	"github.com/altrsoftware/terraform-provider-altr/internal/service/sidecar"
@@ -142,6 +143,9 @@ func (p *SidecarProvider) Resources(ctx context.Context) []func() resource.Resou
 		policy.NewAccessManagementOltpPolicyDataResource,
 		policy.NewAccessManagementSnowflakePolicyDataResource,
 		policy.NewImpersonationPolicyResource,
+		agent.NewAgentResource,
+		agent.NewAgentTaskResource,
+		repo.NewServiceUserResource,
 	}
 }
 
