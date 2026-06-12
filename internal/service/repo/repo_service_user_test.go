@@ -33,6 +33,7 @@ func TestAccServiceUserResource_basicAWSSecretsManager(t *testing.T) {
 					testAccCheckServiceUserExists(resourceName),
 					resource.TestCheckResourceAttrPair(resourceName, "repo_name", repoResourceName, "name"),
 					resource.TestCheckResourceAttr(resourceName, "username", username),
+					resource.TestCheckResourceAttr(resourceName, "resource", "ORCL"),
 					resource.TestCheckResourceAttr(resourceName, "aws_secrets_manager.secrets_path", secretsPath),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "updated_at"),
@@ -296,6 +297,7 @@ resource "altr_repo" "test" {
 resource "altr_service_user" "test" {
   repo_name = altr_repo.test.name
   username  = %[2]q
+  resource  = "ORCL"
 
   aws_secrets_manager = {
     secrets_path = %[3]q
@@ -316,6 +318,7 @@ resource "altr_repo" "test" {
 resource "altr_service_user" "test" {
   repo_name = altr_repo.test.name
   username  = %[2]q
+  resource  = "ORCL"
 
   azure_key_vault = {
     key_vault_uri = %[3]q
@@ -337,6 +340,7 @@ resource "altr_repo" "test" {
 resource "altr_service_user" "test" {
   repo_name = altr_repo.test.name
   username  = %[2]q
+  resource  = "ORCL"
 
   environment_variable = {
     variable_name = %[3]q
@@ -357,6 +361,7 @@ resource "altr_repo" "test" {
 resource "altr_service_user" "test" {
   repo_name = altr_repo.test.name
   username  = %[2]q
+  resource  = "ORCL"
 
   secret_file = {
     path = %[3]q
@@ -377,6 +382,7 @@ resource "altr_repo" "test" {
 resource "altr_service_user" "test" {
   repo_name = altr_repo.test.name
   username  = %[2]q
+  resource  = "ORCL"
 }
 `, repoName, username)
 }
@@ -393,6 +399,7 @@ resource "altr_repo" "test" {
 resource "altr_service_user" "test" {
   repo_name = altr_repo.test.name
   username  = %[2]q
+  resource  = "ORCL"
 
   aws_secrets_manager = {
     secrets_path = "/test/secrets/path"

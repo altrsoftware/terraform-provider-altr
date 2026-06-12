@@ -33,6 +33,7 @@ resource "altr_agent" "example" {
 resource "altr_service_user" "example" {
   repo_name = altr_repo.example.name
   username  = "example"
+  resource  = "ORCL" # actual Oracle service name the agent connects to
 
   aws_secrets_manager = {
     secrets_path = "arn:aws:secretsmanager:us-east-1:000000000000:secret:example-O3d19H"
@@ -47,7 +48,7 @@ resource "altr_agent_task" "example" {
 
   configuration = {
     classification_type = 5
-    sample_strategy     = "COMBINED"
+    sample_strategy     = "ROWS"
     collection_name     = "default"
   }
 

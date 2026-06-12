@@ -72,17 +72,21 @@ type UpdateRepoInput struct {
 }
 
 type RepoUser struct {
-	Username          string             `json:"username"`
-	RepoName          string             `json:"repo_name"`
-	AWSSecretsManager *AWSSecretsManager `json:"aws_secrets_manager"`
-	AzureKeyVault     *AzureKeyVault     `json:"azure_key_vault"`
-	CreatedAt         string             `json:"created_at"`
-	UpdatedAt         string             `json:"updated_at"`
+	Username            string               `json:"username"`
+	RepoName            string               `json:"repo_name"`
+	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
+	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
+	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`
+	SecretFile          *SecretFile          `json:"secret_file,omitempty"`
+	CreatedAt           string               `json:"created_at"`
+	UpdatedAt           string               `json:"updated_at"`
 }
 
 type UpdateRepoUserInput struct {
-	AWSSecretsManager *AWSSecretsManager `json:"aws_secrets_manager,omitempty"`
-	AzureKeyVault     *AzureKeyVault     `json:"azure_key_vault,omitempty"`
+	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
+	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
+	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`
+	SecretFile          *SecretFile          `json:"secret_file,omitempty"`
 }
 
 type AWSSecretsManager struct {
@@ -96,9 +100,11 @@ type AzureKeyVault struct {
 }
 
 type CreateRepoUserInput struct {
-	Username          string             `json:"username"`
-	AWSSecretsManager *AWSSecretsManager `json:"aws_secrets_manager,omitempty"`
-	AzureKeyVault     *AzureKeyVault     `json:"azure_key_vault,omitempty"`
+	Username            string               `json:"username"`
+	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
+	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
+	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`
+	SecretFile          *SecretFile          `json:"secret_file,omitempty"`
 }
 
 // Sidecar Listener structures
@@ -233,6 +239,7 @@ type SecretFile struct {
 type ServiceUser struct {
 	Username            string               `json:"username"`
 	RepoName            string               `json:"repo_name"`
+	Resource            string               `json:"resource,omitempty"`
 	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
 	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
 	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`

@@ -5,13 +5,11 @@ package repo
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -39,6 +37,7 @@ type ServiceUserResourceModel struct {
 	ID                  types.String          `tfsdk:"id"`
 	RepoName            types.String          `tfsdk:"repo_name"`
 	Username            types.String          `tfsdk:"username"`
+	Resource            types.String          `tfsdk:"resource"`
 	AWSSecretsManager   basetypes.ObjectValue `tfsdk:"aws_secrets_manager"`
 	AzureKeyVault       basetypes.ObjectValue `tfsdk:"azure_key_vault"`
 	EnvironmentVariable basetypes.ObjectValue `tfsdk:"environment_variable"`
@@ -48,124 +47,70 @@ type ServiceUserResourceModel struct {
 	UpdatedAt           types.String          `tfsdk:"updated_at"`
 }
 
-var awsAttrTypes = map[string]attr.Type{
-	"iam_role":     types.StringType,
-	"secrets_path": types.StringType,
-}
-
-var azureAttrTypes = map[string]attr.Type{
-	"key_vault_uri": types.StringType,
-	"secret_name":   types.StringType,
-}
-
-var envVarAttrTypes = map[string]attr.Type{
-	"variable_name": types.StringType,
-}
-
-var secretFileAttrTypes = map[string]attr.Type{
-	"path": types.StringType,
-}
-
 func (r *ServiceUserResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_service_user"
 }
 
 func (r *ServiceUserResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		Description: "Manages a repository service user for agent task authentication. Exactly one credential provider must be configured.",
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Description: "Unique identifier (repo_name:username).",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"repo_name": schema.StringAttribute{
-				Description: "Name of the repository this service user belongs to.",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 32),
-				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"username": schema.StringAttribute{
-				Description: "Database username. Must be unique within the repository.",
-				Required:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 128),
-				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
-			},
-			"aws_secrets_manager": schema.SingleNestedAttribute{
-				Description: "AWS Secrets Manager credential provider.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"secrets_path": schema.StringAttribute{
-						Description: "Path or name of the secret in AWS Secrets Manager.",
-						Required:    true,
-					},
-					"iam_role": schema.StringAttribute{
-						Description: "ARN of an IAM role to assume when retrieving the secret.",
-						Optional:    true,
-						Computed:    true,
-					},
-				},
-			},
-			"azure_key_vault": schema.SingleNestedAttribute{
-				Description: "Azure Key Vault credential provider.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"key_vault_uri": schema.StringAttribute{
-						Description: "HTTPS URL of the Azure Key Vault.",
-						Required:    true,
-					},
-					"secret_name": schema.StringAttribute{
-						Description: "Name of the secret within the vault.",
-						Required:    true,
-					},
-				},
-			},
-			"environment_variable": schema.SingleNestedAttribute{
-				Description: "Environment variable credential provider.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"variable_name": schema.StringAttribute{
-						Description: "Name of the OS environment variable containing the secret.",
-						Required:    true,
-					},
-				},
-			},
-			"secret_file": schema.SingleNestedAttribute{
-				Description: "Secret file credential provider. Reads from /altr/secrets/<path> at runtime.",
-				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"path": schema.StringAttribute{
-						Description: "Simple filename (no path separators). Resolved under /altr/secrets/ at runtime.",
-						Required:    true,
-					},
-				},
-			},
-			"task_count": schema.Int64Attribute{
-				Description: "Number of agent tasks currently using this service user.",
-				Computed:    true,
-			},
-			"created_at": schema.StringAttribute{
-				Description: "Creation timestamp.",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"updated_at": schema.StringAttribute{
-				Description: "Last update timestamp.",
-				Computed:    true,
+	attributes := map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Description: "Unique identifier (repo_name:username).",
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
+		"repo_name": schema.StringAttribute{
+			Description: "Name of the repository this service user belongs to.",
+			Required:    true,
+			Validators: []validator.String{
+				stringvalidator.LengthBetween(1, 32),
+			},
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
+		"username": schema.StringAttribute{
+			Description: "Database username. Must be unique within the repository.",
+			Required:    true,
+			Validators: []validator.String{
+				stringvalidator.LengthBetween(1, 128),
+			},
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
+		"resource": schema.StringAttribute{
+			Description: "Database entrypoint the agent connects to with this service user (e.g. an Oracle service name like \"ORCL\"). This is the real database identifier, which may differ from repo_name (the ALTR-side name of the repository). Once connected, the agent fans out to other accessible databases.",
+			Required:    true,
+			Validators: []validator.String{
+				stringvalidator.LengthAtLeast(1),
+			},
+		},
+		"task_count": schema.Int64Attribute{
+			Description: "Number of agent tasks currently using this service user.",
+			Computed:    true,
+		},
+		"created_at": schema.StringAttribute{
+			Description: "Creation timestamp.",
+			Computed:    true,
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"updated_at": schema.StringAttribute{
+			Description: "Last update timestamp.",
+			Computed:    true,
+		},
+	}
+
+	for name, attribute := range credentialProviderSchemaAttributes() {
+		attributes[name] = attribute
+	}
+
+	resp.Schema = schema.Schema{
+		Description: "Manages a repository service user for agent task authentication. Exactly one credential provider must be configured.",
+		Attributes:  attributes,
 	}
 }
 
@@ -196,7 +141,7 @@ func (r *ServiceUserResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	if err := r.validateCredentialProvider(&plan); err != nil {
+	if err := validateSingleCredentialProvider(plan.AWSSecretsManager, plan.AzureKeyVault, plan.EnvironmentVariable, plan.SecretFile); err != nil {
 		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
 
 		return
@@ -204,9 +149,12 @@ func (r *ServiceUserResource) Create(ctx context.Context, req resource.CreateReq
 
 	input := client.CreateServiceUserInput{
 		Username: plan.Username.ValueString(),
+		Resource: plan.Resource.ValueString(),
 	}
 
-	r.applyCredentialProviderToCreateInput(&plan, &input)
+	input.AWSSecretsManager, input.AzureKeyVault, input.EnvironmentVariable, input.SecretFile = credentialProvidersFromObjects(
+		plan.AWSSecretsManager, plan.AzureKeyVault, plan.EnvironmentVariable, plan.SecretFile,
+	)
 
 	su, err := r.client.CreateServiceUser(plan.RepoName.ValueString(), input)
 	if err != nil {
@@ -268,15 +216,19 @@ func (r *ServiceUserResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	if err := r.validateCredentialProvider(&plan); err != nil {
+	if err := validateSingleCredentialProvider(plan.AWSSecretsManager, plan.AzureKeyVault, plan.EnvironmentVariable, plan.SecretFile); err != nil {
 		resp.Diagnostics.AddError("Invalid Configuration", err.Error())
 
 		return
 	}
 
-	input := client.UpdateServiceUserInput{}
+	input := client.UpdateServiceUserInput{
+		Resource: plan.Resource.ValueString(),
+	}
 
-	r.applyCredentialProviderToUpdateInput(&plan, &input)
+	input.AWSSecretsManager, input.AzureKeyVault, input.EnvironmentVariable, input.SecretFile = credentialProvidersFromObjects(
+		plan.AWSSecretsManager, plan.AzureKeyVault, plan.EnvironmentVariable, plan.SecretFile,
+	)
 
 	su, err := r.client.UpdateServiceUser(state.RepoName.ValueString(), state.Username.ValueString(), input)
 	if err != nil {
@@ -329,84 +281,6 @@ func (r *ServiceUserResource) ImportState(ctx context.Context, req resource.Impo
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
-func (r *ServiceUserResource) validateCredentialProvider(model *ServiceUserResourceModel) error {
-	count := 0
-
-	if !model.AWSSecretsManager.IsNull() {
-		count++
-	}
-
-	if !model.AzureKeyVault.IsNull() {
-		count++
-	}
-
-	if !model.EnvironmentVariable.IsNull() {
-		count++
-	}
-
-	if !model.SecretFile.IsNull() {
-		count++
-	}
-
-	if count == 0 {
-		return errors.New("exactly one credential provider must be specified (aws_secrets_manager, azure_key_vault, environment_variable, or secret_file)")
-	}
-
-	if count > 1 {
-		return errors.New("only one credential provider can be specified at a time")
-	}
-
-	return nil
-}
-
-// credentialsFromModel extracts the active credential provider from the model
-// and returns the four credential fields used by both create and update inputs.
-func (r *ServiceUserResource) credentialsFromModel(model *ServiceUserResourceModel) (
-	aws *client.AWSSecretsManager,
-	azure *client.AzureKeyVault,
-	envVar *client.EnvironmentVariable,
-	sf *client.SecretFile,
-) {
-	if !model.AWSSecretsManager.IsNull() {
-		secretsPath := model.AWSSecretsManager.Attributes()["secrets_path"].(types.String)
-		aws = &client.AWSSecretsManager{SecretsPath: secretsPath.ValueString()}
-
-		iamRole := model.AWSSecretsManager.Attributes()["iam_role"].(types.String)
-		if !iamRole.IsNull() && iamRole.ValueString() != "" {
-			aws.IAMRole = iamRole.ValueString()
-		}
-	}
-
-	if !model.AzureKeyVault.IsNull() {
-		azure = &client.AzureKeyVault{
-			KeyVaultURI: model.AzureKeyVault.Attributes()["key_vault_uri"].(types.String).ValueString(),
-			SecretName:  model.AzureKeyVault.Attributes()["secret_name"].(types.String).ValueString(),
-		}
-	}
-
-	if !model.EnvironmentVariable.IsNull() {
-		envVar = &client.EnvironmentVariable{
-			VariableName: model.EnvironmentVariable.Attributes()["variable_name"].(types.String).ValueString(),
-		}
-	}
-
-	if !model.SecretFile.IsNull() {
-		sf = &client.SecretFile{
-			Path: model.SecretFile.Attributes()["path"].(types.String).ValueString(),
-		}
-	}
-
-	return
-}
-
-func (r *ServiceUserResource) applyCredentialProviderToCreateInput(model *ServiceUserResourceModel, input *client.CreateServiceUserInput) {
-	input.AWSSecretsManager, input.AzureKeyVault, input.EnvironmentVariable, input.SecretFile = r.credentialsFromModel(model)
-}
-
-func (r *ServiceUserResource) applyCredentialProviderToUpdateInput(model *ServiceUserResourceModel, input *client.UpdateServiceUserInput) {
-	input.AWSSecretsManager, input.AzureKeyVault, input.EnvironmentVariable, input.SecretFile = r.credentialsFromModel(model)
-}
-
 func (r *ServiceUserResource) mapServiceUserToModel(su *client.ServiceUser, model *ServiceUserResourceModel) {
 	model.RepoName = types.StringValue(su.RepoName)
 	model.Username = types.StringValue(su.Username)
@@ -414,37 +288,13 @@ func (r *ServiceUserResource) mapServiceUserToModel(su *client.ServiceUser, mode
 	model.CreatedAt = types.StringValue(su.CreatedAt)
 	model.UpdatedAt = types.StringValue(su.UpdatedAt)
 
-	if su.AWSSecretsManager != nil {
-		model.AWSSecretsManager = basetypes.NewObjectValueMust(awsAttrTypes, map[string]attr.Value{
-			"iam_role":     types.StringValue(su.AWSSecretsManager.IAMRole),
-			"secrets_path": types.StringValue(su.AWSSecretsManager.SecretsPath),
-		})
-	} else {
-		model.AWSSecretsManager = basetypes.NewObjectNull(awsAttrTypes)
+	// Only overwrite when the API echoes resource, so a response that omits it
+	// does not clobber the configured value and cause a perpetual diff.
+	if su.Resource != "" {
+		model.Resource = types.StringValue(su.Resource)
 	}
 
-	if su.AzureKeyVault != nil {
-		model.AzureKeyVault = basetypes.NewObjectValueMust(azureAttrTypes, map[string]attr.Value{
-			"key_vault_uri": types.StringValue(su.AzureKeyVault.KeyVaultURI),
-			"secret_name":   types.StringValue(su.AzureKeyVault.SecretName),
-		})
-	} else {
-		model.AzureKeyVault = basetypes.NewObjectNull(azureAttrTypes)
-	}
-
-	if su.EnvironmentVariable != nil {
-		model.EnvironmentVariable = basetypes.NewObjectValueMust(envVarAttrTypes, map[string]attr.Value{
-			"variable_name": types.StringValue(su.EnvironmentVariable.VariableName),
-		})
-	} else {
-		model.EnvironmentVariable = basetypes.NewObjectNull(envVarAttrTypes)
-	}
-
-	if su.SecretFile != nil {
-		model.SecretFile = basetypes.NewObjectValueMust(secretFileAttrTypes, map[string]attr.Value{
-			"path": types.StringValue(su.SecretFile.Path),
-		})
-	} else {
-		model.SecretFile = basetypes.NewObjectNull(secretFileAttrTypes)
-	}
+	model.AWSSecretsManager, model.AzureKeyVault, model.EnvironmentVariable, model.SecretFile = credentialProvidersToObjects(
+		su.AWSSecretsManager, su.AzureKeyVault, su.EnvironmentVariable, su.SecretFile,
+	)
 }

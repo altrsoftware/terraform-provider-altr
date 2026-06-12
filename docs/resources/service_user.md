@@ -26,6 +26,7 @@ resource "altr_repo" "example" {
 resource "altr_service_user" "example" {
   repo_name = altr_repo.example.name
   username  = "example"
+  resource  = "ORCL" # actual Oracle service name the agent connects to
 
   aws_secrets_manager = {
     secrets_path = "arn:aws:secretsmanager:us-east-1:000000000000:secret:example-O3d19H"
@@ -39,6 +40,7 @@ resource "altr_service_user" "example" {
 ### Required
 
 - `repo_name` (String) Name of the repository this service user belongs to.
+- `resource` (String) Database entrypoint the agent connects to with this service user (e.g. an Oracle service name like "ORCL"). This is the real database identifier, which may differ from repo_name (the ALTR-side name of the repository). Once connected, the agent fans out to other accessible databases.
 - `username` (String) Database username. Must be unique within the repository.
 
 ### Optional

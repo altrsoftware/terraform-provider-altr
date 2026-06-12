@@ -3,12 +3,12 @@
 page_title: "altr_repo_user Resource - altr"
 subcategory: ""
 description: |-
-  Manages a repository user with credential storage configuration.
+  Manages a repository user with credential storage configuration. Exactly one credential provider must be configured.
 ---
 
 # altr_repo_user (Resource)
 
-Manages a repository user with credential storage configuration.
+Manages a repository user with credential storage configuration. Exactly one credential provider must be configured.
 
 ## Example Usage
 
@@ -52,8 +52,10 @@ resource "altr_repo_user" "other" {
 
 ### Optional
 
-- `aws_secrets_manager` (Attributes) AWS Secrets Manager configuration for storing credentials. (see [below for nested schema](#nestedatt--aws_secrets_manager))
-- `azure_key_vault` (Attributes) Azure Key Vault configuration for storing credentials. (see [below for nested schema](#nestedatt--azure_key_vault))
+- `aws_secrets_manager` (Attributes) AWS Secrets Manager credential provider. (see [below for nested schema](#nestedatt--aws_secrets_manager))
+- `azure_key_vault` (Attributes) Azure Key Vault credential provider. (see [below for nested schema](#nestedatt--azure_key_vault))
+- `environment_variable` (Attributes) Environment variable credential provider. (see [below for nested schema](#nestedatt--environment_variable))
+- `secret_file` (Attributes) Secret file credential provider. Reads from /altr/secrets/<path> at runtime. (see [below for nested schema](#nestedatt--secret_file))
 
 ### Read-Only
 
@@ -66,11 +68,11 @@ resource "altr_repo_user" "other" {
 
 Required:
 
-- `secrets_path` (String) Path to the secret in AWS Secrets Manager.
+- `secrets_path` (String) Path or name of the secret in AWS Secrets Manager.
 
 Optional:
 
-- `iam_role` (String) IAM role ARN for accessing the secret.
+- `iam_role` (String) ARN of an IAM role to assume when retrieving the secret.
 
 
 <a id="nestedatt--azure_key_vault"></a>
@@ -78,5 +80,21 @@ Optional:
 
 Required:
 
-- `key_vault_uri` (String) URI of the Azure Key Vault.
-- `secret_name` (String) Name of the secret in Azure Key Vault.
+- `key_vault_uri` (String) HTTPS URL of the Azure Key Vault.
+- `secret_name` (String) Name of the secret within the vault.
+
+
+<a id="nestedatt--environment_variable"></a>
+### Nested Schema for `environment_variable`
+
+Required:
+
+- `variable_name` (String) Name of the OS environment variable containing the secret.
+
+
+<a id="nestedatt--secret_file"></a>
+### Nested Schema for `secret_file`
+
+Required:
+
+- `path` (String) Simple filename (no path separators). Resolved under /altr/secrets/ at runtime.

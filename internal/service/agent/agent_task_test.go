@@ -225,6 +225,7 @@ EOT
 resource "altr_service_user" "test" {
   repo_name = altr_repo.test.name
   username  = "%[1]s_user"
+  resource  = "ORCL"
 
   aws_secrets_manager = {
     secrets_path = "/test/secrets/path"
