@@ -139,3 +139,122 @@ type APIResponse struct {
 	Success bool            `json:"success"`
 	Data    json.RawMessage `json:"data,omitempty"`
 }
+
+// Agent structures
+type Agent struct {
+	ID           string     `json:"id"`
+	Type         string     `json:"type"`
+	Name         string     `json:"name"`
+	Description  string     `json:"description"`
+	DataPlaneURL string     `json:"data_plane_url"`
+	PublicKey1   *PublicKey `json:"public_key_1,omitempty"`
+	PublicKey2   *PublicKey `json:"public_key_2,omitempty"`
+	TaskCount    int        `json:"task_count"`
+	CreatedAt    string     `json:"created_at"`
+	UpdatedAt    string     `json:"updated_at"`
+}
+
+type CreateAgentInput struct {
+	Type        string  `json:"type"`
+	Name        string  `json:"name"`
+	Description string  `json:"description,omitempty"`
+	PublicKey1  *string `json:"public_key_1,omitempty"`
+	PublicKey2  *string `json:"public_key_2,omitempty"`
+}
+
+type UpdateAgentInput struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	PublicKey1  *string `json:"public_key_1,omitempty"`
+	PublicKey2  *string `json:"public_key_2,omitempty"`
+}
+
+// AgentTask structures
+type SslConfig struct {
+	Enabled                bool   `json:"enabled"`
+	HostnameInCertificate  string `json:"hostname_in_certificate,omitempty"`
+	TrustServerCertificate bool   `json:"trust_server_certificate"`
+	TrustStorePasswordARN  string `json:"trust_store_password_arn,omitempty"`
+	TrustStorePath         string `json:"trust_store_path,omitempty"`
+}
+
+type AgentTaskConfiguration struct {
+	CollectionName     string     `json:"collection_name,omitempty"`
+	ClassificationType *int       `json:"classification_type,omitempty"`
+	SampleStrategy     string     `json:"sample_strategy,omitempty"`
+	SslConfig          *SslConfig `json:"ssl_config,omitempty"`
+}
+
+type AgentTaskSchedule struct {
+	Type        string `json:"type"`
+	Value       string `json:"value"`
+	MaxDuration string `json:"max_duration,omitempty"`
+	Timezone    string `json:"timezone,omitempty"`
+}
+
+type AgentTask struct {
+	ID            string                 `json:"id"`
+	AgentID       string                 `json:"agent_id"`
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description"`
+	RepoName      string                 `json:"repo_name"`
+	ServiceUser   string                 `json:"service_user,omitempty"`
+	Configuration AgentTaskConfiguration `json:"configuration"`
+	Schedule      AgentTaskSchedule      `json:"schedule"`
+	CreatedAt     string                 `json:"created_at"`
+	UpdatedAt     string                 `json:"updated_at"`
+}
+
+type CreateAgentTaskInput struct {
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description,omitempty"`
+	RepoName      string                 `json:"repo_name"`
+	ServiceUser   string                 `json:"service_user,omitempty"`
+	Configuration AgentTaskConfiguration `json:"configuration"`
+	Schedule      AgentTaskSchedule      `json:"schedule"`
+}
+
+type UpdateAgentTaskInput struct {
+	Name          *string                 `json:"name,omitempty"`
+	Description   *string                 `json:"description,omitempty"`
+	Configuration *AgentTaskConfiguration `json:"configuration,omitempty"`
+	Schedule      *AgentTaskSchedule      `json:"schedule,omitempty"`
+}
+
+// ServiceUser structures
+type EnvironmentVariable struct {
+	VariableName string `json:"variable_name"`
+}
+
+type SecretFile struct {
+	Path string `json:"path"`
+}
+
+type ServiceUser struct {
+	Username            string               `json:"username"`
+	RepoName            string               `json:"repo_name"`
+	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
+	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
+	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`
+	SecretFile          *SecretFile          `json:"secret_file,omitempty"`
+	TaskCount           int                  `json:"task_count"`
+	CreatedAt           string               `json:"created_at"`
+	UpdatedAt           string               `json:"updated_at"`
+}
+
+type CreateServiceUserInput struct {
+	Username            string               `json:"username"`
+	Resource            string               `json:"resource"`
+	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
+	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
+	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`
+	SecretFile          *SecretFile          `json:"secret_file,omitempty"`
+}
+
+type UpdateServiceUserInput struct {
+	Resource            string               `json:"resource"`
+	AWSSecretsManager   *AWSSecretsManager   `json:"aws_secrets_manager,omitempty"`
+	AzureKeyVault       *AzureKeyVault       `json:"azure_key_vault,omitempty"`
+	EnvironmentVariable *EnvironmentVariable `json:"environment_variable,omitempty"`
+	SecretFile          *SecretFile          `json:"secret_file,omitempty"`
+}
