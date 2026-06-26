@@ -70,6 +70,35 @@ func TestAccAgentResource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAgentResource_sis(t *testing.T) {
+	resourceName := "altr_agent.test"
+	name := acctest.RandomWithPrefixUnderscoreMaxLength("agent_test_sis", 64)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckAgentDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAgentResourceConfig_sis(name),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAgentExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "type", "SIS"),
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "public_key_1"),
+					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAgentResource_twoPublicKeys(t *testing.T) {
 	resourceName := "altr_agent.test"
 	name := acctest.RandomWithPrefixUnderscoreMaxLength("agent_test", 64)
@@ -258,6 +287,18 @@ func testAccAgentResourceConfig_basic(name string) string {
 	return fmt.Sprintf(`
 resource "altr_agent" "test" {
   type         = "CLASSIFIER"
+  name         = %[1]q
+  public_key_1 = <<-EOT
+%[2]s
+EOT
+}
+`, name, testAgentPublicKey1)
+}
+
+func testAccAgentResourceConfig_sis(name string) string {
+	return fmt.Sprintf(`
+resource "altr_agent" "test" {
+  type         = "SIS"
   name         = %[1]q
   public_key_1 = <<-EOT
 %[2]s

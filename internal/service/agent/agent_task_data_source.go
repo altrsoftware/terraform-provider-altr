@@ -11,6 +11,7 @@ import (
 	"github.com/altrsoftware/terraform-provider-altr/internal/client"
 	"github.com/altrsoftware/terraform-provider-altr/internal/service"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -41,10 +42,17 @@ type AgentTaskDataSourceModel struct {
 }
 
 type AgentTaskConfigurationDataSourceModel struct {
-	ClassificationType types.Int64               `tfsdk:"classification_type"`
-	SampleStrategy     types.String              `tfsdk:"sample_strategy"`
-	CollectionName     types.String              `tfsdk:"collection_name"`
-	SslConfig          *SslConfigDataSourceModel `tfsdk:"ssl_config"`
+	ClassificationType    types.Int64               `tfsdk:"classification_type"`
+	SampleStrategy        types.String              `tfsdk:"sample_strategy"`
+	CollectionName        types.String              `tfsdk:"collection_name"`
+	SslConfig             *SslConfigDataSourceModel `tfsdk:"ssl_config"`
+	AuditFilePath         types.String              `tfsdk:"audit_file_path"`
+	AuditFileType         types.String              `tfsdk:"audit_file_type"`
+	ConditionTypes        types.List                `tfsdk:"condition_types"`
+	InitialAuditTimestamp types.String              `tfsdk:"initial_audit_timestamp"`
+	LogLinePrefix         types.String              `tfsdk:"log_line_prefix"`
+	ServiceName           types.String              `tfsdk:"service_name"`
+	TableName             types.String              `tfsdk:"table_name"`
 }
 
 type SslConfigDataSourceModel struct {
@@ -107,7 +115,7 @@ func (d *AgentTaskDataSource) Schema(ctx context.Context, req datasource.SchemaR
 				Computed:    true,
 			},
 			"configuration": schema.SingleNestedAttribute{
-				Description: "CLASSIFIER task configuration.",
+				Description: "Task configuration. CLASSIFIER tasks use classification_type/sample_strategy; SIS tasks use the audit_* fields.",
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"classification_type": schema.Int64Attribute{
@@ -120,6 +128,35 @@ func (d *AgentTaskDataSource) Schema(ctx context.Context, req datasource.SchemaR
 					},
 					"collection_name": schema.StringAttribute{
 						Description: "Name of the classifier collection to use.",
+						Computed:    true,
+					},
+					"audit_file_path": schema.StringAttribute{
+						Description: "SIS only. Glob path to the audit log files the agent ingests.",
+						Computed:    true,
+					},
+					"audit_file_type": schema.StringAttribute{
+						Description: "SIS only. Format of the audit log files (e.g. json).",
+						Computed:    true,
+					},
+					"condition_types": schema.ListAttribute{
+						Description: "SIS only. Audit condition types to ingest.",
+						ElementType: types.StringType,
+						Computed:    true,
+					},
+					"initial_audit_timestamp": schema.StringAttribute{
+						Description: "SIS only. Timestamp to begin audit ingestion from.",
+						Computed:    true,
+					},
+					"log_line_prefix": schema.StringAttribute{
+						Description: "SIS only. log_line_prefix configured on the source database.",
+						Computed:    true,
+					},
+					"service_name": schema.StringAttribute{
+						Description: "SIS only. Database service name the audit logs belong to.",
+						Computed:    true,
+					},
+					"table_name": schema.StringAttribute{
+						Description: "SIS only. Target table name for audit ingestion.",
 						Computed:    true,
 					},
 					"ssl_config": schema.SingleNestedAttribute{
@@ -246,8 +283,25 @@ func (d *AgentTaskDataSource) mapTaskToModel(task *client.AgentTask, model *Agen
 	model.UpdatedAt = types.StringValue(task.UpdatedAt)
 
 	config := &AgentTaskConfigurationDataSourceModel{
-		SampleStrategy: types.StringValue(task.Configuration.SampleStrategy),
-		CollectionName: types.StringValue(task.Configuration.CollectionName),
+		SampleStrategy:        types.StringValue(task.Configuration.SampleStrategy),
+		CollectionName:        types.StringValue(task.Configuration.CollectionName),
+		AuditFilePath:         types.StringValue(task.Configuration.AuditFilePath),
+		AuditFileType:         types.StringValue(task.Configuration.AuditFileType),
+		InitialAuditTimestamp: types.StringValue(task.Configuration.InitialAuditTimestamp),
+		LogLinePrefix:         types.StringValue(task.Configuration.LogLinePrefix),
+		ServiceName:           types.StringValue(task.Configuration.ServiceName),
+		TableName:             types.StringValue(task.Configuration.TableName),
+	}
+
+	if len(task.Configuration.ConditionTypes) > 0 {
+		elems := make([]attr.Value, len(task.Configuration.ConditionTypes))
+		for i, v := range task.Configuration.ConditionTypes {
+			elems[i] = types.StringValue(v)
+		}
+
+		config.ConditionTypes = types.ListValueMust(types.StringType, elems)
+	} else {
+		config.ConditionTypes = types.ListNull(types.StringType)
 	}
 
 	if task.Configuration.ClassificationType != nil {

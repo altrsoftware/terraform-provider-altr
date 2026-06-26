@@ -31,7 +31,7 @@ data "altr_agent_task" "example" {
 
 ### Read-Only
 
-- `configuration` (Attributes) CLASSIFIER task configuration. (see [below for nested schema](#nestedatt--configuration))
+- `configuration` (Attributes) Task configuration. CLASSIFIER tasks use classification_type/sample_strategy; SIS tasks use the audit_* fields. (see [below for nested schema](#nestedatt--configuration))
 - `created_at` (String) Creation timestamp.
 - `description` (String) Description of the task.
 - `name` (String) Human-readable name for the task.
@@ -45,10 +45,17 @@ data "altr_agent_task" "example" {
 
 Read-Only:
 
+- `audit_file_path` (String) SIS only. Glob path to the audit log files the agent ingests.
+- `audit_file_type` (String) SIS only. Format of the audit log files (e.g. json).
 - `classification_type` (Number) Classification engine identifier.
 - `collection_name` (String) Name of the classifier collection to use.
+- `condition_types` (List of String) SIS only. Audit condition types to ingest.
+- `initial_audit_timestamp` (String) SIS only. Timestamp to begin audit ingestion from.
+- `log_line_prefix` (String) SIS only. log_line_prefix configured on the source database.
 - `sample_strategy` (String) Sampling strategy used when collecting data for classification.
+- `service_name` (String) SIS only. Database service name the audit logs belong to.
 - `ssl_config` (Attributes) SSL/TLS configuration used when connecting to the repository. (see [below for nested schema](#nestedatt--configuration--ssl_config))
+- `table_name` (String) SIS only. Target table name for audit ingestion.
 
 <a id="nestedatt--configuration--ssl_config"></a>
 ### Nested Schema for `configuration.ssl_config`

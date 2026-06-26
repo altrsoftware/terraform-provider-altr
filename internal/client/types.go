@@ -190,6 +190,14 @@ type AgentTaskConfiguration struct {
 	ClassificationType *int       `json:"classification_type,omitempty"`
 	SampleStrategy     string     `json:"sample_strategy,omitempty"`
 	SslConfig          *SslConfig `json:"ssl_config,omitempty"`
+	// SIS (audit ingestion) task fields.
+	AuditFilePath         string   `json:"audit_file_path,omitempty"`
+	AuditFileType         string   `json:"audit_file_type,omitempty"`
+	ConditionTypes        []string `json:"condition_types,omitempty"`
+	InitialAuditTimestamp string   `json:"initial_audit_timestamp,omitempty"`
+	LogLinePrefix         string   `json:"log_line_prefix,omitempty"`
+	ServiceName           string   `json:"service_name,omitempty"`
+	TableName             string   `json:"table_name,omitempty"`
 }
 
 type AgentTaskSchedule struct {
