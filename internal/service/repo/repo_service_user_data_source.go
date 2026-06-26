@@ -187,6 +187,18 @@ func (d *ServiceUserDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
+	// A service user must always have a resource; reject empty resource as invalid data.
+	if su.Resource == "" {
+		resp.Diagnostics.AddError(
+			"Service user has an empty resource",
+			fmt.Sprintf("Service user '%s' in repo '%s' has an empty 'resource', which is not valid.",
+				config.Username.ValueString(),
+				config.RepoName.ValueString()),
+		)
+
+		return
+	}
+
 	d.mapServiceUserToModel(su, &config)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)

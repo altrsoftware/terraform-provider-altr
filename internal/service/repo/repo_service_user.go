@@ -198,6 +198,20 @@ func (r *ServiceUserResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	// A service user must always have a resource; an empty one is invalid data
+	// (the API and the resource schema both require it). Reject it explicitly so
+	// import/refresh fails with a clear message instead of a confusing schema error.
+	if su.Resource == "" {
+		resp.Diagnostics.AddError(
+			"Service user has an empty resource",
+			fmt.Sprintf("Service user %q in repository %q has an empty 'resource', which is not valid. "+
+				"Set a non-empty resource on the service user in ALTR before importing or managing it.",
+				su.Username, su.RepoName),
+		)
+
+		return
+	}
+
 	r.mapServiceUserToModel(su, &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
