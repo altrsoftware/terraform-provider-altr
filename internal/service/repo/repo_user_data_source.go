@@ -26,12 +26,14 @@ type RepoUserDataSource struct {
 }
 
 type RepoUserDataSourceModel struct {
-	RepoName          types.String                      `tfsdk:"repo_name"`
-	Username          types.String                      `tfsdk:"username"`
-	AWSSecretsManager *AWSSecretsManagerDataSourceModel `tfsdk:"aws_secrets_manager"`
-	AzureKeyVault     *AzureKeyVaultDataSourceModel     `tfsdk:"azure_key_vault"`
-	CreatedAt         types.String                      `tfsdk:"created_at"`
-	UpdatedAt         types.String                      `tfsdk:"updated_at"`
+	RepoName            types.String                        `tfsdk:"repo_name"`
+	Username            types.String                        `tfsdk:"username"`
+	AWSSecretsManager   *AWSSecretsManagerDataSourceModel   `tfsdk:"aws_secrets_manager"`
+	AzureKeyVault       *AzureKeyVaultDataSourceModel       `tfsdk:"azure_key_vault"`
+	EnvironmentVariable *EnvironmentVariableDataSourceModel `tfsdk:"environment_variable"`
+	SecretFile          *SecretFileDataSourceModel          `tfsdk:"secret_file"`
+	CreatedAt           types.String                        `tfsdk:"created_at"`
+	UpdatedAt           types.String                        `tfsdk:"updated_at"`
 }
 
 type AWSSecretsManagerDataSourceModel struct {
@@ -97,6 +99,26 @@ func (d *RepoUserDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 						Validators: []validator.String{
 							stringvalidator.UTF8LengthAtLeast(1),
 						},
+					},
+				},
+			},
+			"environment_variable": schema.SingleNestedAttribute{
+				Description: "Environment variable credential provider.",
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"variable_name": schema.StringAttribute{
+						Description: "Name of the OS environment variable containing the secret.",
+						Computed:    true,
+					},
+				},
+			},
+			"secret_file": schema.SingleNestedAttribute{
+				Description: "Secret file credential provider. Reads from /altr/secrets/<path> at runtime.",
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"path": schema.StringAttribute{
+						Description: "Simple filename resolved under /altr/secrets/ at runtime.",
+						Computed:    true,
 					},
 				},
 			},
@@ -201,5 +223,23 @@ func (d *RepoUserDataSource) mapRepoUserToModel(repoUser *client.RepoUser, model
 		}
 	} else {
 		model.AzureKeyVault = nil
+	}
+
+	// Handle environment variable
+	if repoUser.EnvironmentVariable != nil && repoUser.EnvironmentVariable.VariableName != "" {
+		model.EnvironmentVariable = &EnvironmentVariableDataSourceModel{
+			VariableName: types.StringValue(repoUser.EnvironmentVariable.VariableName),
+		}
+	} else {
+		model.EnvironmentVariable = nil
+	}
+
+	// Handle secret file
+	if repoUser.SecretFile != nil && repoUser.SecretFile.Path != "" {
+		model.SecretFile = &SecretFileDataSourceModel{
+			Path: types.StringValue(repoUser.SecretFile.Path),
+		}
+	} else {
+		model.SecretFile = nil
 	}
 }

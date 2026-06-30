@@ -34,6 +34,8 @@ data "altr_repo_user" "example" {
 - `aws_secrets_manager` (Attributes) AWS Secrets Manager configuration for storing credentials. (see [below for nested schema](#nestedatt--aws_secrets_manager))
 - `azure_key_vault` (Attributes) Azure Key Vault configuration for storing credentials. (see [below for nested schema](#nestedatt--azure_key_vault))
 - `created_at` (String) Creation timestamp.
+- `environment_variable` (Attributes) Environment variable credential provider. (see [below for nested schema](#nestedatt--environment_variable))
+- `secret_file` (Attributes) Secret file credential provider. Reads from /altr/secrets/<path> at runtime. (see [below for nested schema](#nestedatt--secret_file))
 - `updated_at` (String) Last update timestamp.
 
 <a id="nestedatt--aws_secrets_manager"></a>
@@ -52,3 +54,19 @@ Read-Only:
 
 - `key_vault_uri` (String) URI of the Azure Key Vault.
 - `secret_name` (String) Name of the secret in Azure Key Vault.
+
+
+<a id="nestedatt--environment_variable"></a>
+### Nested Schema for `environment_variable`
+
+Read-Only:
+
+- `variable_name` (String) Name of the OS environment variable containing the secret.
+
+
+<a id="nestedatt--secret_file"></a>
+### Nested Schema for `secret_file`
+
+Read-Only:
+
+- `path` (String) Simple filename resolved under /altr/secrets/ at runtime.
