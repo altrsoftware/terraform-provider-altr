@@ -104,6 +104,54 @@ func TestAccRepoUserResource_basicAzureKeyVault(t *testing.T) {
 	})
 }
 
+func TestAccRepoUserResource_environmentVariable(t *testing.T) {
+	resourceName := "altr_repo_user.test"
+	repoName := acctest.RandomWithPrefixUnderscoreMaxLength("repo_user_test", 32)
+	username := acctest.RandomWithPrefixUnderscoreMaxLength("repouser", 32)
+	variableName := "ALTR_DB_SECRET"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckRepoUserDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRepoUserResourceConfig_environmentVariable(repoName, username, variableName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRepoUserExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "username", username),
+					resource.TestCheckResourceAttr(resourceName, "environment_variable.variable_name", variableName),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRepoUserResource_secretFile(t *testing.T) {
+	resourceName := "altr_repo_user.test"
+	repoName := acctest.RandomWithPrefixUnderscoreMaxLength("repo_user_test", 32)
+	username := acctest.RandomWithPrefixUnderscoreMaxLength("repouser", 32)
+	path := "db-secret.json"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckRepoUserDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccRepoUserResourceConfig_secretFile(repoName, username, path),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckRepoUserExists(resourceName),
+					resource.TestCheckResourceAttr(resourceName, "username", username),
+					resource.TestCheckResourceAttr(resourceName, "secret_file.path", path),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccRepoUserResource_multipleUsers(t *testing.T) {
 	resourceName1 := "altr_repo_user.test1"
 	resourceName2 := "altr_repo_user.test2"
@@ -148,11 +196,11 @@ func TestAccRepoUserResource_credentialStoreValidation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccRepoUserResourceConfig_noCredentialStore(repoName, username),
-				ExpectError: regexp.MustCompile(`exactly one credential store must be specified`),
+				ExpectError: regexp.MustCompile(`exactly one credential provider must be specified`),
 			},
 			{
 				Config:      testAccRepoUserResourceConfig_bothCredentialStores(repoName, username),
-				ExpectError: regexp.MustCompile(`only one credential store can be specified at a time`),
+				ExpectError: regexp.MustCompile(`only one credential provider can be specified at a time`),
 			},
 		},
 	})
@@ -172,7 +220,7 @@ func TestAccRepoUserResource_requiredFieldsValidation(t *testing.T) {
 			},
 			{
 				Config:      testAccRepoUserResourceConfig_emptySecretsPath(repoName, "testuser"),
-				ExpectError: regexp.MustCompile(`Error: Invalid Configuration`), // Caught by the framework
+				ExpectError: regexp.MustCompile(`Invalid Attribute Value Length`), // Caught by the framework (secrets_path must be non-empty)
 			},
 		},
 	})
@@ -455,6 +503,46 @@ resource "altr_repo_user" "test" {
   }
 }
 `, repoName, username, keyVaultURI, secretName)
+}
+
+func testAccRepoUserResourceConfig_environmentVariable(repoName, username, variableName string) string {
+	return fmt.Sprintf(`
+resource "altr_repo" "test" {
+  name      = %[1]q
+  hostname  = "test-host"
+  port      = 5432
+  type      = "Oracle"
+}
+
+resource "altr_repo_user" "test" {
+  repo_name = altr_repo.test.name
+  username  = %[2]q
+
+  environment_variable = {
+    variable_name = %[3]q
+  }
+}
+`, repoName, username, variableName)
+}
+
+func testAccRepoUserResourceConfig_secretFile(repoName, username, path string) string {
+	return fmt.Sprintf(`
+resource "altr_repo" "test" {
+  name      = %[1]q
+  hostname  = "test-host"
+  port      = 5432
+  type      = "Oracle"
+}
+
+resource "altr_repo_user" "test" {
+  repo_name = altr_repo.test.name
+  username  = %[2]q
+
+  secret_file = {
+    path = %[3]q
+  }
+}
+`, repoName, username, path)
 }
 
 func testAccRepoUserResourceConfig_multipleUsers(repoName, username1, username2, secretsPath, keyVaultURI, secretName string) string {

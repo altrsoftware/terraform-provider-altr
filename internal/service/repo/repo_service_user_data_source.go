@@ -15,90 +15,88 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var _ datasource.DataSource = &RepoUserDataSource{}
+var _ datasource.DataSource = &ServiceUserDataSource{}
 
-func NewRepoUserDataSource() datasource.DataSource {
-	return &RepoUserDataSource{}
+func NewServiceUserDataSource() datasource.DataSource {
+	return &ServiceUserDataSource{}
 }
 
-type RepoUserDataSource struct {
+type ServiceUserDataSource struct {
 	client *client.Client
 }
 
-type RepoUserDataSourceModel struct {
+type ServiceUserDataSourceModel struct {
 	RepoName            types.String                        `tfsdk:"repo_name"`
 	Username            types.String                        `tfsdk:"username"`
+	Resource            types.String                        `tfsdk:"resource"`
 	AWSSecretsManager   *AWSSecretsManagerDataSourceModel   `tfsdk:"aws_secrets_manager"`
 	AzureKeyVault       *AzureKeyVaultDataSourceModel       `tfsdk:"azure_key_vault"`
 	EnvironmentVariable *EnvironmentVariableDataSourceModel `tfsdk:"environment_variable"`
 	SecretFile          *SecretFileDataSourceModel          `tfsdk:"secret_file"`
+	TaskCount           types.Int64                         `tfsdk:"task_count"`
 	CreatedAt           types.String                        `tfsdk:"created_at"`
 	UpdatedAt           types.String                        `tfsdk:"updated_at"`
 }
 
-type AWSSecretsManagerDataSourceModel struct {
-	IAMRole     types.String `tfsdk:"iam_role"`
-	SecretsPath types.String `tfsdk:"secrets_path"`
+type EnvironmentVariableDataSourceModel struct {
+	VariableName types.String `tfsdk:"variable_name"`
 }
 
-type AzureKeyVaultDataSourceModel struct {
-	KeyVaultURI types.String `tfsdk:"key_vault_uri"`
-	SecretName  types.String `tfsdk:"secret_name"`
+type SecretFileDataSourceModel struct {
+	Path types.String `tfsdk:"path"`
 }
 
-func (d *RepoUserDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_repo_user"
+func (d *ServiceUserDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_service_user"
 }
 
-func (d *RepoUserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *ServiceUserDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data source for retrieving repository user information with credential storage configuration.",
+		Description: "Data source for retrieving a repository service user used for agent task authentication.",
 		Attributes: map[string]schema.Attribute{
 			"repo_name": schema.StringAttribute{
-				Description: "Name of the repository.",
+				Description: "Name of the repository this service user belongs to.",
 				Required:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 32),
 				},
 			},
 			"username": schema.StringAttribute{
-				Description: "Username of the repository user.",
+				Description: "Database username.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 32),
+					stringvalidator.LengthBetween(1, 128),
 				},
 			},
+			"resource": schema.StringAttribute{
+				Description: "Database entrypoint the agent connects to with this service user (e.g. an Oracle service name like \"ORCL\").",
+				Computed:    true,
+			},
 			"aws_secrets_manager": schema.SingleNestedAttribute{
-				Description: "AWS Secrets Manager configuration for storing credentials.",
+				Description: "AWS Secrets Manager credential provider.",
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"iam_role": schema.StringAttribute{
-						Description: "IAM role ARN for accessing the secret.",
+						Description: "ARN of an IAM role to assume when retrieving the secret.",
 						Computed:    true,
 					},
 					"secrets_path": schema.StringAttribute{
-						Description: "Path to the secret in AWS Secrets Manager.",
-						Validators: []validator.String{
-							stringvalidator.UTF8LengthAtLeast(1),
-						},
-						Computed: true,
+						Description: "Path or name of the secret in AWS Secrets Manager.",
+						Computed:    true,
 					},
 				},
 			},
 			"azure_key_vault": schema.SingleNestedAttribute{
-				Description: "Azure Key Vault configuration for storing credentials.",
+				Description: "Azure Key Vault credential provider.",
 				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"key_vault_uri": schema.StringAttribute{
-						Description: "URI of the Azure Key Vault.",
+						Description: "HTTPS URL of the Azure Key Vault.",
 						Computed:    true,
 					},
 					"secret_name": schema.StringAttribute{
-						Description: "Name of the secret in Azure Key Vault.",
+						Description: "Name of the secret within the vault.",
 						Computed:    true,
-						Validators: []validator.String{
-							stringvalidator.UTF8LengthAtLeast(1),
-						},
 					},
 				},
 			},
@@ -122,6 +120,10 @@ func (d *RepoUserDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 					},
 				},
 			},
+			"task_count": schema.Int64Attribute{
+				Description: "Number of agent tasks currently using this service user.",
+				Computed:    true,
+			},
 			"created_at": schema.StringAttribute{
 				Description: "Creation timestamp.",
 				Computed:    true,
@@ -134,12 +136,12 @@ func (d *RepoUserDataSource) Schema(ctx context.Context, req datasource.SchemaRe
 	}
 }
 
-func (d *RepoUserDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *ServiceUserDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
-	client, ok := req.ProviderData.(*client.Client)
+	c, ok := req.ProviderData.(*client.Client)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
@@ -149,11 +151,11 @@ func (d *RepoUserDataSource) Configure(ctx context.Context, req datasource.Confi
 		return
 	}
 
-	d.client = client
+	d.client = c
 }
 
-func (d *RepoUserDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var config RepoUserDataSourceModel
+func (d *ServiceUserDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config ServiceUserDataSourceModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 
@@ -161,12 +163,11 @@ func (d *RepoUserDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	// Get repo user from API
-	repoUser, err := d.client.GetRepoUser(config.RepoName.ValueString(), config.Username.ValueString())
+	su, err := d.client.GetServiceUser(config.RepoName.ValueString(), config.Username.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error reading repository user",
-			fmt.Sprintf("Could not read repository user %s in repo %s: %s",
+			"Error reading service user",
+			fmt.Sprintf("Could not read service user %s in repo %s: %s",
 				config.Username.ValueString(),
 				config.RepoName.ValueString(),
 				err.Error()),
@@ -175,11 +176,10 @@ func (d *RepoUserDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	// If repo user doesn't exist, return error
-	if repoUser == nil {
+	if su == nil {
 		resp.Diagnostics.AddError(
-			"Repository user not found",
-			fmt.Sprintf("Repository user '%s' in repo '%s' does not exist.",
+			"Service user not found",
+			fmt.Sprintf("Service user '%s' in repo '%s' does not exist.",
 				config.Username.ValueString(),
 				config.RepoName.ValueString()),
 		)
@@ -187,27 +187,37 @@ func (d *RepoUserDataSource) Read(ctx context.Context, req datasource.ReadReques
 		return
 	}
 
-	// Map response to the model
-	d.mapRepoUserToModel(repoUser, &config)
+	// A service user must always have a resource; reject empty resource as invalid data.
+	if su.Resource == "" {
+		resp.Diagnostics.AddError(
+			"Service user has an empty resource",
+			fmt.Sprintf("Service user '%s' in repo '%s' has an empty 'resource', which is not valid.",
+				config.Username.ValueString(),
+				config.RepoName.ValueString()),
+		)
 
-	// Set state
+		return
+	}
+
+	d.mapServiceUserToModel(su, &config)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
 }
 
-// Helper function to map API response to Terraform model
-func (d *RepoUserDataSource) mapRepoUserToModel(repoUser *client.RepoUser, model *RepoUserDataSourceModel) {
-	model.RepoName = types.StringValue(repoUser.RepoName)
-	model.Username = types.StringValue(repoUser.Username)
-	model.CreatedAt = types.StringValue(repoUser.CreatedAt)
-	model.UpdatedAt = types.StringValue(repoUser.UpdatedAt)
+func (d *ServiceUserDataSource) mapServiceUserToModel(su *client.ServiceUser, model *ServiceUserDataSourceModel) {
+	model.RepoName = types.StringValue(su.RepoName)
+	model.Username = types.StringValue(su.Username)
+	model.Resource = types.StringValue(su.Resource)
+	model.TaskCount = types.Int64Value(int64(su.TaskCount))
+	model.CreatedAt = types.StringValue(su.CreatedAt)
+	model.UpdatedAt = types.StringValue(su.UpdatedAt)
 
-	// Handle AWS Secrets Manager
-	if repoUser.AWSSecretsManager != nil && repoUser.AWSSecretsManager.SecretsPath != "" {
+	if su.AWSSecretsManager != nil && su.AWSSecretsManager.SecretsPath != "" {
 		model.AWSSecretsManager = &AWSSecretsManagerDataSourceModel{
-			SecretsPath: types.StringValue(repoUser.AWSSecretsManager.SecretsPath),
+			SecretsPath: types.StringValue(su.AWSSecretsManager.SecretsPath),
 		}
-		if repoUser.AWSSecretsManager.IAMRole != "" {
-			model.AWSSecretsManager.IAMRole = types.StringValue(repoUser.AWSSecretsManager.IAMRole)
+		if su.AWSSecretsManager.IAMRole != "" {
+			model.AWSSecretsManager.IAMRole = types.StringValue(su.AWSSecretsManager.IAMRole)
 		} else {
 			model.AWSSecretsManager.IAMRole = types.StringNull()
 		}
@@ -215,29 +225,26 @@ func (d *RepoUserDataSource) mapRepoUserToModel(repoUser *client.RepoUser, model
 		model.AWSSecretsManager = nil
 	}
 
-	// Handle Azure Key Vault
-	if repoUser.AzureKeyVault != nil && repoUser.AzureKeyVault.SecretName != "" {
+	if su.AzureKeyVault != nil && su.AzureKeyVault.SecretName != "" {
 		model.AzureKeyVault = &AzureKeyVaultDataSourceModel{
-			KeyVaultURI: types.StringValue(repoUser.AzureKeyVault.KeyVaultURI),
-			SecretName:  types.StringValue(repoUser.AzureKeyVault.SecretName),
+			KeyVaultURI: types.StringValue(su.AzureKeyVault.KeyVaultURI),
+			SecretName:  types.StringValue(su.AzureKeyVault.SecretName),
 		}
 	} else {
 		model.AzureKeyVault = nil
 	}
 
-	// Handle environment variable
-	if repoUser.EnvironmentVariable != nil && repoUser.EnvironmentVariable.VariableName != "" {
+	if su.EnvironmentVariable != nil && su.EnvironmentVariable.VariableName != "" {
 		model.EnvironmentVariable = &EnvironmentVariableDataSourceModel{
-			VariableName: types.StringValue(repoUser.EnvironmentVariable.VariableName),
+			VariableName: types.StringValue(su.EnvironmentVariable.VariableName),
 		}
 	} else {
 		model.EnvironmentVariable = nil
 	}
 
-	// Handle secret file
-	if repoUser.SecretFile != nil && repoUser.SecretFile.Path != "" {
+	if su.SecretFile != nil && su.SecretFile.Path != "" {
 		model.SecretFile = &SecretFileDataSourceModel{
-			Path: types.StringValue(repoUser.SecretFile.Path),
+			Path: types.StringValue(su.SecretFile.Path),
 		}
 	} else {
 		model.SecretFile = nil

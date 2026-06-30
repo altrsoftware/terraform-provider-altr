@@ -21,45 +21,47 @@ import (
 )
 
 var (
-	_ resource.Resource                = &RepoUserResource{}
-	_ resource.ResourceWithImportState = &RepoUserResource{}
+	_ resource.Resource                = &ServiceUserResource{}
+	_ resource.ResourceWithImportState = &ServiceUserResource{}
 )
 
-func NewRepoUserResource() resource.Resource {
-	return &RepoUserResource{}
+func NewServiceUserResource() resource.Resource {
+	return &ServiceUserResource{}
 }
 
-type RepoUserResource struct {
+type ServiceUserResource struct {
 	client *client.Client
 }
 
-type RepoUserResourceModel struct {
+type ServiceUserResourceModel struct {
 	ID                  types.String          `tfsdk:"id"`
 	RepoName            types.String          `tfsdk:"repo_name"`
 	Username            types.String          `tfsdk:"username"`
+	Resource            types.String          `tfsdk:"resource"`
 	AWSSecretsManager   basetypes.ObjectValue `tfsdk:"aws_secrets_manager"`
 	AzureKeyVault       basetypes.ObjectValue `tfsdk:"azure_key_vault"`
 	EnvironmentVariable basetypes.ObjectValue `tfsdk:"environment_variable"`
 	SecretFile          basetypes.ObjectValue `tfsdk:"secret_file"`
+	TaskCount           types.Int64           `tfsdk:"task_count"`
 	CreatedAt           types.String          `tfsdk:"created_at"`
 	UpdatedAt           types.String          `tfsdk:"updated_at"`
 }
 
-func (r *RepoUserResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_repo_user"
+func (r *ServiceUserResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_service_user"
 }
 
-func (r *RepoUserResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *ServiceUserResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	attributes := map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Description: "Unique identifier for the repo user (repo_name:username).",
+			Description: "Unique identifier (repo_name:username).",
 			Computed:    true,
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
 			},
 		},
 		"repo_name": schema.StringAttribute{
-			Description: "Name of the repository.",
+			Description: "Name of the repository this service user belongs to.",
 			Required:    true,
 			Validators: []validator.String{
 				stringvalidator.LengthBetween(1, 32),
@@ -69,14 +71,25 @@ func (r *RepoUserResource) Schema(ctx context.Context, req resource.SchemaReques
 			},
 		},
 		"username": schema.StringAttribute{
-			Description: "Username for the repository user.",
+			Description: "Database username. Must be unique within the repository.",
 			Required:    true,
 			Validators: []validator.String{
-				stringvalidator.LengthBetween(1, 32),
+				stringvalidator.LengthBetween(1, 128),
 			},
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
+		},
+		"resource": schema.StringAttribute{
+			Description: "Database entrypoint the agent connects to with this service user (e.g. an Oracle service name like \"ORCL\"). This is the real database identifier, which may differ from repo_name (the ALTR-side name of the repository). Once connected, the agent fans out to other accessible databases.",
+			Required:    true,
+			Validators: []validator.String{
+				stringvalidator.LengthAtLeast(1),
+			},
+		},
+		"task_count": schema.Int64Attribute{
+			Description: "Number of agent tasks currently using this service user.",
+			Computed:    true,
 		},
 		"created_at": schema.StringAttribute{
 			Description: "Creation timestamp.",
@@ -96,12 +109,12 @@ func (r *RepoUserResource) Schema(ctx context.Context, req resource.SchemaReques
 	}
 
 	resp.Schema = schema.Schema{
-		Description: "Manages a repository user with credential storage configuration. Exactly one credential provider must be configured.",
+		Description: "Manages a repository service user for agent task authentication. Exactly one credential provider must be configured.",
 		Attributes:  attributes,
 	}
 }
 
-func (r *RepoUserResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *ServiceUserResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -119,8 +132,8 @@ func (r *RepoUserResource) Configure(ctx context.Context, req resource.Configure
 	r.client = c
 }
 
-func (r *RepoUserResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan RepoUserResourceModel
+func (r *ServiceUserResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan ServiceUserResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 
@@ -134,33 +147,34 @@ func (r *RepoUserResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	input := client.CreateRepoUserInput{
+	input := client.CreateServiceUserInput{
 		Username: plan.Username.ValueString(),
+		Resource: plan.Resource.ValueString(),
 	}
 
 	input.AWSSecretsManager, input.AzureKeyVault, input.EnvironmentVariable, input.SecretFile = credentialProvidersFromObjects(
 		plan.AWSSecretsManager, plan.AzureKeyVault, plan.EnvironmentVariable, plan.SecretFile,
 	)
 
-	repoUser, err := r.client.CreateRepoUser(plan.RepoName.ValueString(), input)
+	su, err := r.client.CreateServiceUser(plan.RepoName.ValueString(), input)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating repository user",
-			"Could not create repository user, unexpected error: "+err.Error(),
+			"Error creating service user",
+			"Could not create service user, unexpected error: "+err.Error(),
 		)
 
 		return
 	}
 
-	r.mapRepoUserToModel(repoUser, &plan)
+	r.mapServiceUserToModel(su, &plan)
 
 	plan.ID = types.StringValue(fmt.Sprintf("%s:%s", plan.RepoName.ValueString(), plan.Username.ValueString()))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
-func (r *RepoUserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state RepoUserResourceModel
+func (r *ServiceUserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state ServiceUserResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -168,31 +182,45 @@ func (r *RepoUserResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	repoUser, err := r.client.GetRepoUser(state.RepoName.ValueString(), state.Username.ValueString())
+	su, err := r.client.GetServiceUser(state.RepoName.ValueString(), state.Username.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error reading repository user",
-			"Could not read repository user "+state.Username.ValueString()+" in repo "+state.RepoName.ValueString()+": "+err.Error(),
+			"Error reading service user",
+			"Could not read service user "+state.Username.ValueString()+" in repo "+state.RepoName.ValueString()+": "+err.Error(),
 		)
 
 		return
 	}
 
-	if repoUser == nil {
+	if su == nil {
 		resp.State.RemoveResource(ctx)
 
 		return
 	}
 
-	r.mapRepoUserToModel(repoUser, &state)
+	// A service user must always have a resource; an empty one is invalid data
+	// (the API and the resource schema both require it). Reject it explicitly so
+	// import/refresh fails with a clear message instead of a confusing schema error.
+	if su.Resource == "" {
+		resp.Diagnostics.AddError(
+			"Service user has an empty resource",
+			fmt.Sprintf("Service user %q in repository %q has an empty 'resource', which is not valid. "+
+				"Set a non-empty resource on the service user in ALTR before importing or managing it.",
+				su.Username, su.RepoName),
+		)
+
+		return
+	}
+
+	r.mapServiceUserToModel(su, &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func (r *RepoUserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *ServiceUserResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var (
-		plan  RepoUserResourceModel
-		state RepoUserResourceModel
+		plan  ServiceUserResourceModel
+		state ServiceUserResourceModel
 	)
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -208,29 +236,31 @@ func (r *RepoUserResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	input := client.UpdateRepoUserInput{}
+	input := client.UpdateServiceUserInput{
+		Resource: plan.Resource.ValueString(),
+	}
 
 	input.AWSSecretsManager, input.AzureKeyVault, input.EnvironmentVariable, input.SecretFile = credentialProvidersFromObjects(
 		plan.AWSSecretsManager, plan.AzureKeyVault, plan.EnvironmentVariable, plan.SecretFile,
 	)
 
-	repoUser, err := r.client.UpdateRepoUser(state.RepoName.ValueString(), state.Username.ValueString(), input)
+	su, err := r.client.UpdateServiceUser(state.RepoName.ValueString(), state.Username.ValueString(), input)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating repository user",
-			"Could not update repository user, unexpected error: "+err.Error(),
+			"Error updating service user",
+			"Could not update service user, unexpected error: "+err.Error(),
 		)
 
 		return
 	}
 
-	r.mapRepoUserToModel(repoUser, &plan)
+	r.mapServiceUserToModel(su, &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
-func (r *RepoUserResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state RepoUserResourceModel
+func (r *ServiceUserResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state ServiceUserResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 
@@ -238,19 +268,18 @@ func (r *RepoUserResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err := r.client.DeleteRepoUser(state.RepoName.ValueString(), state.Username.ValueString())
+	err := r.client.DeleteServiceUser(state.RepoName.ValueString(), state.Username.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error deleting repository user",
-			"Could not delete repository user, unexpected error: "+err.Error(),
+			"Error deleting service user",
+			"Could not delete service user. Note: a service user cannot be deleted while it has active tasks. Error: "+err.Error(),
 		)
 
 		return
 	}
 }
 
-func (r *RepoUserResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Expected import ID format: "repo_name:username"
+func (r *ServiceUserResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	parts := strings.SplitN(req.ID, ":", 2)
 	if len(parts) != 2 {
 		resp.Diagnostics.AddError(
@@ -266,13 +295,20 @@ func (r *RepoUserResource) ImportState(ctx context.Context, req resource.ImportS
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
 
-func (r *RepoUserResource) mapRepoUserToModel(repoUser *client.RepoUser, model *RepoUserResourceModel) {
-	model.RepoName = types.StringValue(repoUser.RepoName)
-	model.Username = types.StringValue(repoUser.Username)
-	model.CreatedAt = types.StringValue(repoUser.CreatedAt)
-	model.UpdatedAt = types.StringValue(repoUser.UpdatedAt)
+func (r *ServiceUserResource) mapServiceUserToModel(su *client.ServiceUser, model *ServiceUserResourceModel) {
+	model.RepoName = types.StringValue(su.RepoName)
+	model.Username = types.StringValue(su.Username)
+	model.TaskCount = types.Int64Value(int64(su.TaskCount))
+	model.CreatedAt = types.StringValue(su.CreatedAt)
+	model.UpdatedAt = types.StringValue(su.UpdatedAt)
+
+	// Only overwrite when the API echoes resource, so a response that omits it
+	// does not clobber the configured value and cause a perpetual diff.
+	if su.Resource != "" {
+		model.Resource = types.StringValue(su.Resource)
+	}
 
 	model.AWSSecretsManager, model.AzureKeyVault, model.EnvironmentVariable, model.SecretFile = credentialProvidersToObjects(
-		repoUser.AWSSecretsManager, repoUser.AzureKeyVault, repoUser.EnvironmentVariable, repoUser.SecretFile,
+		su.AWSSecretsManager, su.AzureKeyVault, su.EnvironmentVariable, su.SecretFile,
 	)
 }

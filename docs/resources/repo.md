@@ -42,5 +42,6 @@ resource "altr_repo" "example" {
 
 - `binding_count` (Number) Number of sidecar bindings for this repository.
 - `created_at` (String) Creation timestamp.
+- `service_user_count` (Number) Number of service users associated with this repository.
 - `updated_at` (String) Last update timestamp.
 - `user_count` (Number) Number of users associated with this repository.

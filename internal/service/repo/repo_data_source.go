@@ -28,16 +28,17 @@ type RepoDataSource struct {
 }
 
 type RepoDataSourceModel struct {
-	Name         types.String `tfsdk:"name"`
-	Description  types.String `tfsdk:"description"`
-	Type         types.String `tfsdk:"type"`
-	Hostname     types.String `tfsdk:"hostname"`
-	Port         types.Int64  `tfsdk:"port"`
-	UserCount    types.Int64  `tfsdk:"user_count"`
-	BindingCount types.Int64  `tfsdk:"binding_count"`
-	OrgID        types.String `tfsdk:"org_id"`
-	CreatedAt    types.String `tfsdk:"created_at"`
-	UpdatedAt    types.String `tfsdk:"updated_at"`
+	Name             types.String `tfsdk:"name"`
+	Description      types.String `tfsdk:"description"`
+	Type             types.String `tfsdk:"type"`
+	Hostname         types.String `tfsdk:"hostname"`
+	Port             types.Int64  `tfsdk:"port"`
+	UserCount        types.Int64  `tfsdk:"user_count"`
+	ServiceUserCount types.Int64  `tfsdk:"service_user_count"`
+	BindingCount     types.Int64  `tfsdk:"binding_count"`
+	OrgID            types.String `tfsdk:"org_id"`
+	CreatedAt        types.String `tfsdk:"created_at"`
+	UpdatedAt        types.String `tfsdk:"updated_at"`
 }
 
 func (d *RepoDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -78,6 +79,10 @@ func (d *RepoDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 			},
 			"user_count": schema.Int64Attribute{
 				Description: "Number of users associated with this repository.",
+				Computed:    true,
+			},
+			"service_user_count": schema.Int64Attribute{
+				Description: "Number of service users associated with this repository.",
 				Computed:    true,
 			},
 			"binding_count": schema.Int64Attribute{
@@ -163,6 +168,7 @@ func (d *RepoDataSource) mapRepoToModel(repo *client.Repo, model *RepoDataSource
 	model.Hostname = types.StringValue(repo.Hostname)
 	model.Port = types.Int64Value(int64(repo.Port))
 	model.UserCount = types.Int64Value(int64(repo.UserCount))
+	model.ServiceUserCount = types.Int64Value(int64(repo.ServiceUserCount))
 	model.BindingCount = types.Int64Value(int64(repo.BindingCount))
 	model.OrgID = types.StringValue(repo.OrgID)
 	model.CreatedAt = types.StringValue(repo.CreatedAt)
