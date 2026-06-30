@@ -47,16 +47,17 @@ type UpdateSidecarInput struct {
 
 // Repo structures
 type Repo struct {
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	Hostname     string `json:"hostname"`
-	Port         int    `json:"port"`
-	Type         string `json:"type"`
-	UserCount    int    `json:"user_count"`
-	BindingCount int    `json:"binding_count"`
-	OrgID        string `json:"org_id"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	Hostname         string `json:"hostname"`
+	Port             int    `json:"port"`
+	Type             string `json:"type"`
+	UserCount        int    `json:"user_count"`
+	ServiceUserCount int    `json:"service_user_count"`
+	BindingCount     int    `json:"binding_count"`
+	OrgID            string `json:"org_id"`
+	CreatedAt        string `json:"created_at"`
+	UpdatedAt        string `json:"updated_at"`
 }
 
 type CreateRepoInput struct {

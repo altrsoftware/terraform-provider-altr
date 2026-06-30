@@ -36,6 +36,7 @@ data "altr_repo" "example" {
 - `hostname` (String) Hostname of the repository.
 - `org_id` (String) Organization ID that owns this repository.
 - `port` (Number) Port number of the repository.
+- `service_user_count` (Number) Number of service users associated with this repository.
 - `type` (String) Type of the repository (e.g., Oracle, etc.).
 - `updated_at` (String) Last update timestamp.
 - `user_count` (Number) Number of users associated with this repository.

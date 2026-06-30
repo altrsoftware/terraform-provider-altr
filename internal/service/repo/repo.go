@@ -36,15 +36,16 @@ type RepoResource struct {
 }
 
 type RepoResourceModel struct {
-	Name         types.String `tfsdk:"name"`
-	Description  types.String `tfsdk:"description"`
-	Type         types.String `tfsdk:"type"`
-	Hostname     types.String `tfsdk:"hostname"`
-	Port         types.Int64  `tfsdk:"port"`
-	UserCount    types.Int64  `tfsdk:"user_count"`
-	BindingCount types.Int64  `tfsdk:"binding_count"`
-	CreatedAt    types.String `tfsdk:"created_at"`
-	UpdatedAt    types.String `tfsdk:"updated_at"`
+	Name             types.String `tfsdk:"name"`
+	Description      types.String `tfsdk:"description"`
+	Type             types.String `tfsdk:"type"`
+	Hostname         types.String `tfsdk:"hostname"`
+	Port             types.Int64  `tfsdk:"port"`
+	UserCount        types.Int64  `tfsdk:"user_count"`
+	ServiceUserCount types.Int64  `tfsdk:"service_user_count"`
+	BindingCount     types.Int64  `tfsdk:"binding_count"`
+	CreatedAt        types.String `tfsdk:"created_at"`
+	UpdatedAt        types.String `tfsdk:"updated_at"`
 }
 
 func (r *RepoResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -113,6 +114,10 @@ func (r *RepoResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"user_count": schema.Int64Attribute{
 				Description: "Number of users associated with this repository.",
+				Computed:    true,
+			},
+			"service_user_count": schema.Int64Attribute{
+				Description: "Number of service users associated with this repository.",
 				Computed:    true,
 			},
 			"binding_count": schema.Int64Attribute{
@@ -295,6 +300,7 @@ func (r *RepoResource) mapRepoToModel(repo *client.Repo, model *RepoResourceMode
 	model.Hostname = types.StringValue(repo.Hostname)
 	model.Port = types.Int64Value(int64(repo.Port))
 	model.UserCount = types.Int64Value(int64(repo.UserCount))
+	model.ServiceUserCount = types.Int64Value(int64(repo.ServiceUserCount))
 	model.BindingCount = types.Int64Value(int64(repo.BindingCount))
 	model.CreatedAt = types.StringValue(repo.CreatedAt)
 	model.UpdatedAt = types.StringValue(repo.UpdatedAt)
