@@ -52,6 +52,50 @@ func TestAccAgentTaskResource_basic(t *testing.T) {
 	})
 }
 
+func TestAccAgentTaskResource_sis(t *testing.T) {
+	resourceName := "altr_agent_task.test"
+	agentResourceName := "altr_agent.test"
+	repoResourceName := "altr_repo.test"
+	prefix := acctest.RandomWithPrefixUnderscoreMaxLength("task_sis", 24)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { acctest.PreCheck(t) },
+		ProtoV6ProviderFactories: acctest.ProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckAgentTaskDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAgentTaskResourceConfig_sis(prefix),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAgentTaskExists(resourceName),
+					resource.TestCheckResourceAttrPair(resourceName, "agent_id", agentResourceName, "id"),
+					resource.TestCheckResourceAttrPair(resourceName, "repo_name", repoResourceName, "name"),
+					resource.TestCheckResourceAttr(resourceName, "configuration.audit_file_path", "/var/lib/postgresql/audit/*.json"),
+					resource.TestCheckResourceAttr(resourceName, "configuration.audit_file_type", "json"),
+					// SIS tasks don't use the classifier fields; the empty->null mapping
+					// must leave them unset (guards the inconsistent-result risk).
+					resource.TestCheckNoResourceAttr(resourceName, "configuration.classification_type"),
+					resource.TestCheckNoResourceAttr(resourceName, "configuration.sample_strategy"),
+					resource.TestCheckResourceAttr(resourceName, "schedule.type", "CRON"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+				),
+			},
+			{
+				// Re-applying the same config must produce an empty plan (no
+				// perpetual diff / inconsistent-result from the empty->null mapping).
+				Config:             testAccAgentTaskResourceConfig_sis(prefix),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: testAccAgentTaskImportStateIDFunc(resourceName),
+			},
+		},
+	})
+}
+
 func TestAccAgentTaskResource_update(t *testing.T) {
 	resourceName := "altr_agent_task.test"
 	prefix := acctest.RandomWithPrefixUnderscoreMaxLength("task_test", 24)
@@ -255,6 +299,41 @@ resource "altr_agent_task" "test" {
   }
 }
 `, prefix, cron)
+}
+
+func testAccAgentTaskResourceConfig_sis(prefix string) string {
+	return fmt.Sprintf(`
+resource "altr_repo" "test" {
+  name     = "%[1]s_repo"
+  hostname = "test-host"
+  port     = 5432
+  type     = "Postgres"
+}
+
+resource "altr_agent" "test" {
+  type         = "SIS"
+  name         = "%[1]s_agent"
+  public_key_1 = <<-EOT
+%[2]s
+EOT
+}
+
+resource "altr_agent_task" "test" {
+  agent_id  = altr_agent.test.id
+  name      = "%[1]s_task"
+  repo_name = altr_repo.test.name
+
+  configuration = {
+    audit_file_path = "/var/lib/postgresql/audit/*.json"
+    audit_file_type = "json"
+  }
+
+  schedule = {
+    type  = "CRON"
+    value = "*/5 * * * *"
+  }
+}
+`, prefix, testAgentPublicKey1)
 }
 
 func testAccAgentTaskResourceConfig_invalidScheduleType(prefix string) string {

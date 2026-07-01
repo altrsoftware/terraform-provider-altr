@@ -46,6 +46,13 @@ resource "altr_agent_task" "example" {
 
 # SIS (Security Intelligence Scout) audit-ingestion task. SIS tasks use the
 # audit_* configuration fields instead of classification_type/sample_strategy.
+resource "altr_repo" "postgres" {
+  name     = "example-postgres"
+  type     = "Postgres"
+  hostname = "postgres.example.com"
+  port     = 5432
+}
+
 resource "altr_agent" "sis" {
   type = "SIS"
   name = "example-sis"
@@ -56,12 +63,12 @@ resource "altr_agent" "sis" {
 resource "altr_agent_task" "sis" {
   agent_id  = altr_agent.sis.id
   name      = "example-sis-audit"
-  repo_name = altr_repo.example.name
+  repo_name = altr_repo.postgres.name
 
   configuration = {
     audit_file_path = "/var/lib/postgresql/audit/*.json"
     audit_file_type = "json"
-    service_name    = "ORCL"
+    log_line_prefix = "%m [%p] %q%u@%d "
   }
 
   schedule = {

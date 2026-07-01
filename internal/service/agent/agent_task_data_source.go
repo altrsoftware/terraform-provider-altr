@@ -282,15 +282,18 @@ func (d *AgentTaskDataSource) mapTaskToModel(task *client.AgentTask, model *Agen
 	model.CreatedAt = types.StringValue(task.CreatedAt)
 	model.UpdatedAt = types.StringValue(task.UpdatedAt)
 
+	// Map empty API strings to null so the data source matches the resource's
+	// read behavior (strOrNull) — a task read via either path returns the same
+	// values for absent config fields.
 	config := &AgentTaskConfigurationDataSourceModel{
-		SampleStrategy:        types.StringValue(task.Configuration.SampleStrategy),
-		CollectionName:        types.StringValue(task.Configuration.CollectionName),
-		AuditFilePath:         types.StringValue(task.Configuration.AuditFilePath),
-		AuditFileType:         types.StringValue(task.Configuration.AuditFileType),
-		InitialAuditTimestamp: types.StringValue(task.Configuration.InitialAuditTimestamp),
-		LogLinePrefix:         types.StringValue(task.Configuration.LogLinePrefix),
-		ServiceName:           types.StringValue(task.Configuration.ServiceName),
-		TableName:             types.StringValue(task.Configuration.TableName),
+		SampleStrategy:        strOrNull(task.Configuration.SampleStrategy),
+		CollectionName:        strOrNull(task.Configuration.CollectionName),
+		AuditFilePath:         strOrNull(task.Configuration.AuditFilePath),
+		AuditFileType:         strOrNull(task.Configuration.AuditFileType),
+		InitialAuditTimestamp: strOrNull(task.Configuration.InitialAuditTimestamp),
+		LogLinePrefix:         strOrNull(task.Configuration.LogLinePrefix),
+		ServiceName:           strOrNull(task.Configuration.ServiceName),
+		TableName:             strOrNull(task.Configuration.TableName),
 	}
 
 	if len(task.Configuration.ConditionTypes) > 0 {

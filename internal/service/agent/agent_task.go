@@ -84,7 +84,7 @@ func (r *AgentTaskResource) Metadata(ctx context.Context, req resource.MetadataR
 
 func (r *AgentTaskResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a task assigned to an ALTR CLASSIFIER agent. Tasks run against a repository on a schedule.",
+		Description: "Manages a task assigned to an ALTR agent (CLASSIFIER or SIS). Tasks run against a repository on a schedule.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Task UUID.",
@@ -140,9 +140,10 @@ func (r *AgentTaskResource) Schema(ctx context.Context, req resource.SchemaReque
 						},
 					},
 					"sample_strategy": schema.StringAttribute{
-						Description: "CLASSIFIER only. Deprecated: prefer condition_types. Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).",
-						Optional:    true,
-						Computed:    true,
+						Description:        "CLASSIFIER only. Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).",
+						DeprecationMessage: "sample_strategy is deprecated; prefer condition_types.",
+						Optional:           true,
+						Computed:           true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("ROWS", "METADATA", "COMBINED"),
 						},
@@ -471,6 +472,19 @@ func (r *AgentTaskResource) validateConfiguration(model *AgentTaskResourceModel)
 
 	if hasCollection && (classificationType.IsNull() || classificationType.ValueInt64() != collectionNameClassificationType) {
 		return fmt.Errorf("'collection_name' may only be set when 'classification_type' is %d (ALTR_NATIVE)", collectionNameClassificationType)
+	}
+
+	// A task must be either a CLASSIFIER task (classification_type) or a SIS
+	// audit task (audit_file_path). The task model carries no agent type, so
+	// enforce that the configuration isn't empty/ambiguous here rather than
+	// deferring to an opaque API error.
+	hasClassifier := !classificationType.IsNull() && !classificationType.IsUnknown()
+
+	auditFilePath := attrs["audit_file_path"].(types.String)
+	hasAudit := !auditFilePath.IsNull() && !auditFilePath.IsUnknown() && auditFilePath.ValueString() != ""
+
+	if !hasClassifier && !hasAudit {
+		return fmt.Errorf("configuration must set either 'classification_type' (CLASSIFIER task) or 'audit_file_path' (SIS task)")
 	}
 
 	return nil

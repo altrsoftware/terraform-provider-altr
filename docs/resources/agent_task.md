@@ -3,12 +3,12 @@
 page_title: "altr_agent_task Resource - altr"
 subcategory: ""
 description: |-
-  Manages a task assigned to an ALTR CLASSIFIER agent. Tasks run against a repository on a schedule.
+  Manages a task assigned to an ALTR agent (CLASSIFIER or SIS). Tasks run against a repository on a schedule.
 ---
 
 # altr_agent_task (Resource)
 
-Manages a task assigned to an ALTR CLASSIFIER agent. Tasks run against a repository on a schedule.
+Manages a task assigned to an ALTR agent (CLASSIFIER or SIS). Tasks run against a repository on a schedule.
 
 ## Example Usage
 
@@ -61,6 +61,13 @@ resource "altr_agent_task" "example" {
 
 # SIS (Security Intelligence Scout) audit-ingestion task. SIS tasks use the
 # audit_* configuration fields instead of classification_type/sample_strategy.
+resource "altr_repo" "postgres" {
+  name     = "example-postgres"
+  type     = "Postgres"
+  hostname = "postgres.example.com"
+  port     = 5432
+}
+
 resource "altr_agent" "sis" {
   type = "SIS"
   name = "example-sis"
@@ -71,12 +78,12 @@ resource "altr_agent" "sis" {
 resource "altr_agent_task" "sis" {
   agent_id  = altr_agent.sis.id
   name      = "example-sis-audit"
-  repo_name = altr_repo.example.name
+  repo_name = altr_repo.postgres.name
 
   configuration = {
     audit_file_path = "/var/lib/postgresql/audit/*.json"
     audit_file_type = "json"
-    service_name    = "ORCL"
+    log_line_prefix = "%m [%p] %q%u@%d "
   }
 
   schedule = {
@@ -120,7 +127,7 @@ Optional:
 - `condition_types` (List of String) SIS only. Audit condition types to ingest.
 - `initial_audit_timestamp` (String) SIS only. Timestamp to begin audit ingestion from.
 - `log_line_prefix` (String) SIS only. log_line_prefix configured on the source database (used to parse audit lines).
-- `sample_strategy` (String) CLASSIFIER only. Deprecated: prefer condition_types. Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).
+- `sample_strategy` (String, Deprecated) CLASSIFIER only. Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).
 - `service_name` (String) SIS only. Database service name the audit logs belong to.
 - `ssl_config` (Attributes) SSL/TLS configuration used when connecting to the repository. (see [below for nested schema](#nestedatt--configuration--ssl_config))
 - `table_name` (String) SIS only. Target table name for audit ingestion.
