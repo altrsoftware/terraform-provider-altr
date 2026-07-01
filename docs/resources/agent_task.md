@@ -115,7 +115,7 @@ Optional:
 
 - `audit_file_path` (String) SIS only. Glob path to the audit log files the agent ingests.
 - `audit_file_type` (String) SIS only. Format of the audit log files (e.g. json).
-- `classification_type` (Number) CLASSIFIER only. Classification engine to use: 1 (GOOGLE_DLP), 2 (SNOWFLAKE_NATIVE), 3 (SNOWFLAKE_OBJECT_TAG_IMPORT), 4 (SNOWFLAKE_NATIVE_AND_TAG_IMPORT), or 5 (ALTR_NATIVE).
+- `classification_type` (Number) CLASSIFIER only. Classification engine to use: 1 (GOOGLE_DLP), 2 (SNOWFLAKE_NATIVE), or 5 (ALTR_NATIVE).
 - `collection_name` (String) CLASSIFIER only. Name of the classifier collection to use. May only be set when classification_type is 5 (ALTR_NATIVE).
 - `condition_types` (List of String) SIS only. Audit condition types to ingest.
 - `initial_audit_timestamp` (String) SIS only. Timestamp to begin audit ingestion from.
