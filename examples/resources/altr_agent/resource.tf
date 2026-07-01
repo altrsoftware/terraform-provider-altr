@@ -8,3 +8,11 @@ resource "altr_agent" "example" {
 
   public_key_1 = file("${path.module}/agent_public_key.pem")
 }
+
+resource "altr_agent" "sis" {
+  type        = "SIS"
+  name        = "example-sis"
+  description = "Example SIS (Security Intelligence Scout) audit agent"
+
+  public_key_1 = file("${path.module}/agent_public_key.pem")
+}

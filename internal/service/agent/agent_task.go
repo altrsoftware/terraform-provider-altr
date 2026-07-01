@@ -61,6 +61,14 @@ var configAttrTypes = map[string]attr.Type{
 	"classification_type": types.Int64Type,
 	"sample_strategy":     types.StringType,
 	"ssl_config":          types.ObjectType{AttrTypes: sslConfigAttrTypes},
+	// SIS (audit ingestion) task fields.
+	"audit_file_path":         types.StringType,
+	"audit_file_type":         types.StringType,
+	"condition_types":         types.ListType{ElemType: types.StringType},
+	"initial_audit_timestamp": types.StringType,
+	"log_line_prefix":         types.StringType,
+	"service_name":            types.StringType,
+	"table_name":              types.StringType,
 }
 
 var scheduleAttrTypes = map[string]attr.Type{
@@ -76,7 +84,7 @@ func (r *AgentTaskResource) Metadata(ctx context.Context, req resource.MetadataR
 
 func (r *AgentTaskResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a task assigned to an ALTR CLASSIFIER agent. Tasks run against a repository on a schedule.",
+		Description: "Manages a task assigned to an ALTR agent (CLASSIFIER or SIS). Tasks run against a repository on a schedule.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Task UUID.",
@@ -120,25 +128,64 @@ func (r *AgentTaskResource) Schema(ctx context.Context, req resource.SchemaReque
 				},
 			},
 			"configuration": schema.SingleNestedAttribute{
-				Description: "CLASSIFIER task configuration.",
+				Description: "Task configuration. CLASSIFIER tasks use classification_type/sample_strategy; SIS tasks use the audit_* fields.",
 				Required:    true,
 				Attributes: map[string]schema.Attribute{
 					"classification_type": schema.Int64Attribute{
-						Description: "Classification engine to use: 1 (GOOGLE_DLP), 2 (SNOWFLAKE_NATIVE), 3 (SNOWFLAKE_OBJECT_TAG_IMPORT), 4 (SNOWFLAKE_NATIVE_AND_TAG_IMPORT), or 5 (ALTR_NATIVE).",
-						Required:    true,
+						Description: "CLASSIFIER only. Classification engine to use: 1 (GOOGLE_DLP), 2 (SNOWFLAKE_NATIVE), or 5 (ALTR_NATIVE).",
+						Optional:    true,
+						Computed:    true,
 						Validators: []validator.Int64{
-							int64validator.OneOf(1, 2, 3, 4, 5),
+							int64validator.OneOf(1, 2, 5),
 						},
 					},
 					"sample_strategy": schema.StringAttribute{
-						Description: "Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).",
-						Required:    true,
+						Description:        "CLASSIFIER only. Sampling strategy: ROWS (row data only), METADATA (column metadata only), or COMBINED (both).",
+						DeprecationMessage: "sample_strategy is deprecated; prefer condition_types.",
+						Optional:           true,
+						Computed:           true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("ROWS", "METADATA", "COMBINED"),
 						},
 					},
 					"collection_name": schema.StringAttribute{
-						Description: "Name of the classifier collection to use. May only be set when classification_type is 5 (ALTR_NATIVE).",
+						Description: "CLASSIFIER only. Name of the classifier collection to use. May only be set when classification_type is 5 (ALTR_NATIVE).",
+						Optional:    true,
+						Computed:    true,
+					},
+					"audit_file_path": schema.StringAttribute{
+						Description: "SIS only. Glob path to the audit log files the agent ingests.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"audit_file_type": schema.StringAttribute{
+						Description: "SIS only. Format of the audit log files (e.g. json).",
+						Optional:    true,
+						Computed:    true,
+					},
+					"condition_types": schema.ListAttribute{
+						Description: "SIS only. Audit condition types to ingest.",
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+					},
+					"initial_audit_timestamp": schema.StringAttribute{
+						Description: "SIS only. Timestamp to begin audit ingestion from.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"log_line_prefix": schema.StringAttribute{
+						Description: "SIS only. log_line_prefix configured on the source database (used to parse audit lines).",
+						Optional:    true,
+						Computed:    true,
+					},
+					"service_name": schema.StringAttribute{
+						Description: "SIS only. Database service name the audit logs belong to.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"table_name": schema.StringAttribute{
+						Description: "SIS only. Target table name for audit ingestion.",
 						Optional:    true,
 						Computed:    true,
 					},
@@ -400,6 +447,17 @@ func (r *AgentTaskResource) ImportState(ctx context.Context, req resource.Import
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
 }
 
+// strOrNull maps an empty API string to a null value so generate-config-out
+// omits it (keeping CLASSIFIER/SIS configs clean and avoiding validators that
+// reject empty strings, e.g. sample_strategy).
+func strOrNull(s string) types.String {
+	if s == "" {
+		return types.StringNull()
+	}
+
+	return types.StringValue(s)
+}
+
 // collectionNameClassificationType is the only classification_type
 // (ALTR_NATIVE) for which the API accepts a collection_name.
 const collectionNameClassificationType = 5
@@ -416,6 +474,19 @@ func (r *AgentTaskResource) validateConfiguration(model *AgentTaskResourceModel)
 		return fmt.Errorf("'collection_name' may only be set when 'classification_type' is %d (ALTR_NATIVE)", collectionNameClassificationType)
 	}
 
+	// A task must be either a CLASSIFIER task (classification_type) or a SIS
+	// audit task (audit_file_path). The task model carries no agent type, so
+	// enforce that the configuration isn't empty/ambiguous here rather than
+	// deferring to an opaque API error.
+	hasClassifier := !classificationType.IsNull() && !classificationType.IsUnknown()
+
+	auditFilePath := attrs["audit_file_path"].(types.String)
+	hasAudit := !auditFilePath.IsNull() && !auditFilePath.IsUnknown() && auditFilePath.ValueString() != ""
+
+	if !hasClassifier && !hasAudit {
+		return fmt.Errorf("configuration must set either 'classification_type' (CLASSIFIER task) or 'audit_file_path' (SIS task)")
+	}
+
 	return nil
 }
 
@@ -423,13 +494,28 @@ func (r *AgentTaskResource) configFromModel(obj basetypes.ObjectValue) client.Ag
 	attrs := obj.Attributes()
 
 	cfg := client.AgentTaskConfiguration{
-		CollectionName: attrs["collection_name"].(types.String).ValueString(),
-		SampleStrategy: attrs["sample_strategy"].(types.String).ValueString(),
+		CollectionName:        attrs["collection_name"].(types.String).ValueString(),
+		SampleStrategy:        attrs["sample_strategy"].(types.String).ValueString(),
+		AuditFilePath:         attrs["audit_file_path"].(types.String).ValueString(),
+		AuditFileType:         attrs["audit_file_type"].(types.String).ValueString(),
+		InitialAuditTimestamp: attrs["initial_audit_timestamp"].(types.String).ValueString(),
+		LogLinePrefix:         attrs["log_line_prefix"].(types.String).ValueString(),
+		ServiceName:           attrs["service_name"].(types.String).ValueString(),
+		TableName:             attrs["table_name"].(types.String).ValueString(),
 	}
 
 	if ct := attrs["classification_type"].(types.Int64); !ct.IsNull() && !ct.IsUnknown() {
 		v := int(ct.ValueInt64())
 		cfg.ClassificationType = &v
+	}
+
+	if ctl, ok := attrs["condition_types"].(basetypes.ListValue); ok && !ctl.IsNull() && !ctl.IsUnknown() {
+		conditions := make([]string, 0, len(ctl.Elements()))
+		for _, e := range ctl.Elements() {
+			conditions = append(conditions, e.(types.String).ValueString())
+		}
+
+		cfg.ConditionTypes = conditions
 	}
 
 	if ssl, ok := attrs["ssl_config"].(basetypes.ObjectValue); ok && !ssl.IsNull() && !ssl.IsUnknown() {
@@ -483,11 +569,28 @@ func (r *AgentTaskResource) mapTaskToModel(task *client.AgentTask, model *AgentT
 		})
 	}
 
+	conditionTypes := types.ListNull(types.StringType)
+	if len(task.Configuration.ConditionTypes) > 0 {
+		elems := make([]attr.Value, len(task.Configuration.ConditionTypes))
+		for i, v := range task.Configuration.ConditionTypes {
+			elems[i] = types.StringValue(v)
+		}
+
+		conditionTypes = types.ListValueMust(types.StringType, elems)
+	}
+
 	model.Configuration = basetypes.NewObjectValueMust(configAttrTypes, map[string]attr.Value{
-		"collection_name":     types.StringValue(task.Configuration.CollectionName),
-		"classification_type": classificationType,
-		"sample_strategy":     types.StringValue(task.Configuration.SampleStrategy),
-		"ssl_config":          sslConfig,
+		"collection_name":         strOrNull(task.Configuration.CollectionName),
+		"classification_type":     classificationType,
+		"sample_strategy":         strOrNull(task.Configuration.SampleStrategy),
+		"ssl_config":              sslConfig,
+		"audit_file_path":         strOrNull(task.Configuration.AuditFilePath),
+		"audit_file_type":         strOrNull(task.Configuration.AuditFileType),
+		"condition_types":         conditionTypes,
+		"initial_audit_timestamp": strOrNull(task.Configuration.InitialAuditTimestamp),
+		"log_line_prefix":         strOrNull(task.Configuration.LogLinePrefix),
+		"service_name":            strOrNull(task.Configuration.ServiceName),
+		"table_name":              strOrNull(task.Configuration.TableName),
 	})
 
 	model.Schedule = basetypes.NewObjectValueMust(scheduleAttrTypes, map[string]attr.Value{

@@ -51,7 +51,7 @@ func (r *AgentResource) Metadata(ctx context.Context, req resource.MetadataReque
 
 func (r *AgentResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages an ALTR CLASSIFIER agent.",
+		Description: "Manages an ALTR agent (CLASSIFIER or SIS).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "Agent UUID.",
@@ -61,10 +61,10 @@ func (r *AgentResource) Schema(ctx context.Context, req resource.SchemaRequest, 
 				},
 			},
 			"type": schema.StringAttribute{
-				Description: "Agent type. Must be 'CLASSIFIER'. Cannot be changed after creation.",
+				Description: "Agent type. Must be 'CLASSIFIER' or 'SIS'. Cannot be changed after creation.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("CLASSIFIER"),
+					stringvalidator.OneOf("CLASSIFIER", "SIS"),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
